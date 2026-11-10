@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Прогресс генерации</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui;background:#101822;color:#eaf2fa}body{margin:0;padding:32px;display:grid;min-height:80vh;place-items:center}main{width:min(540px,100%)}small{color:#93abc0}h1{font-size:28px;margin:12px 0 4px}#percent{font-size:80px;font-weight:650;letter-spacing:-4px;margin-top:30px}progress{width:100%;height:16px;accent-color:#8cd9ff}#phase{font-size:20px;margin-top:24px}#detail{color:#afc4d5;min-height:3em}footer{border-top:1px solid #304052;margin-top:36px;padding-top:18px;color:#93abc0;line-height:1.6}#connection{display:block;margin-top:18px;font-size:13px}
+</style>
+<main><small>COMFYUI · FILM</small><h1 id="title">Подключение…</h1><small id="segment"></small><div id="percent">—</div><progress id="bar" max="100"></progress><div id="phase">Ожидание</div><p id="detail"></p><p id="eta" style="font-size:17px;margin-top:4px;color:#eaf2fa"></p><footer>Процент относится к шагам расчёта, а не ко всему времени генерации. После расчёта выполняются декодирование и сохранение.<small id="connection"></small></footer></main>
+<script src="/progress.js"></script></html>

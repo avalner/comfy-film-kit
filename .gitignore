@@ -1,0 +1,38 @@
+# ---------------------------------------------------------------- environment
+# Vendored Python packages. Recreate with:
+#   & <python> -m pip install --target comfy-film\deps opencv-python-headless
+deps/
+youtube-direct/dependencies/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# ------------------------------------------------------------------ artefacts
+logs/
+*.log
+.pipeline/
+seedvr2/pipeline-test/
+
+# ---------------------------------------------------- binaries and model files
+# Real-ESRGAN ncnn release (~100 MB) and its demo media: see realesrgan/README.md
+realesrgan/*.exe
+realesrgan/*.zip
+realesrgan/*.dll
+realesrgan/models/
+realesrgan/*.jpg
+realesrgan/*.mp4
+seedvr2/*.mp4
+
+# 14.5 GB of llama.cpp and weights, unrelated to the film pipeline
+agent-model/
+
+# ------------------------------------------------- machine- and account-local
+# Templates are committed; the real files never are.
+comfy-film/assets/machine.json
+comfy-film/assets/youtube.json
+
+# ------------------------------------------------------------------- OS noise
+Thumbs.db
+desktop.ini
+.DS_Store

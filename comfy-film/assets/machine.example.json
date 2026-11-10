@@ -1,0 +1,24 @@
+{
+  "server": "http://127.0.0.1:8188",
+  "ffmpeg": "C:/ffmpeg/bin/ffmpeg.exe",
+  "ffprobe": "C:/ffmpeg/bin/ffprobe.exe",
+  "python": "<COMFYUI_ROOT>/python_embeded/python.exe",
+  "startup": {
+    "enabled": true,
+    "server": "http://127.0.0.1:8188",
+    "argv": [
+      "<COMFYUI_ROOT>/python_embeded/python.exe",
+      "-s",
+      "<COMFYUI_ROOT>/ComfyUI/main.py",
+      "--windows-standalone-build",
+      "--disable-auto-launch",
+      "--listen",
+      "127.0.0.1",
+      "--port",
+      "8188"
+    ],
+    "cwd": "<COMFYUI_ROOT>",
+    "log_dir": "<TOOLS_ROOT>/comfy-film/logs",
+    "timeout": 300
+  }
+}

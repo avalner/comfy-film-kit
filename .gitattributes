@@ -1,0 +1,15 @@
+# Normalise text in the repository; check out with the platform default.
+* text=auto
+
+*.py    text diff=python
+*.md    text
+*.json  text
+*.ps1   text
+*.cmd   text eol=crlf
+*.txt   text
+*.mp4   binary
+*.png   binary
+*.jpg   binary
+*.exe   binary
+*.dll   binary
+*.pyd   binary

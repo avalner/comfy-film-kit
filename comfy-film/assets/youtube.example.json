@@ -1,0 +1,10 @@
+{
+  "client_secrets": "<PATH_TO>/client_secrets.json",
+  "token": "<PATH_TO>/token.json",
+  "dependencies": "<TOOLS_ROOT>/youtube-direct/dependencies",
+  "channel_id": "UC0000000000000000000000",
+  "channel_title": "Your Channel",
+  "channel_handle": "@yourhandle",
+  "preferred_language": "en",
+  "known_playlists": {}
+}
