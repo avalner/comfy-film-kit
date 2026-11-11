@@ -41,6 +41,10 @@ $py = 'I:\Video Generation\ComfyUI_windows_portable\python_embeded\python.exe'
 - **Codex:** `%USERPROFILE%\.codex\skills\comfy-film\` содержит `SKILL.md` (копия из
   `Tools\skills\comfy-film\SKILL.md`) и junction'ы `scripts\`, `assets\` на `Tools\comfy-film\`.
   `h3-prompt-writing` и `living-paintings` в Codex — тоже junction'ы на `Tools\skills\`.
+- **Claude Code:** `%USERPROFILE%\.claude\skills\` — junction'ы на `comfy-film-dsh`,
+  `living-paintings`, `h3-prompt-writing`. Ставятся, только если `~\.claude` существует или папка
+  задана через `-ClaudeSkills`; скилл там тот же, что в DSH, а имена инструментов переводит
+  таблица «If you are Claude Code or another agent».
 
 Всё это восстанавливается одной командой:
 
