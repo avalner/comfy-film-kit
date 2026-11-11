@@ -5,6 +5,11 @@ description: Generate and assemble reviewed ComfyUI MiniMax H3 films; publish ap
 
 # ComfyUI film pipeline
 
+**Paths first.** This text is written against the author's machine (`I:\Video Generation\Tools`,
+ComfyUI in `I:\Video Generation\ComfyUI_windows_portable`). Elsewhere, resolve them once from
+`paths.json` in the kit root — `tools`, `comfy`, `python`, `ffmpeg`, `ffprobe` — and substitute those
+values for the literals below. A path copied straight out of this document fails on a missing file.
+
 Use `scripts/film.py` (or `scripts/film.cmd`), never recreate controllers or poll ComfyUI through model turns. Python and local startup settings are in `assets/machine.json`. The `scripts/` and `assets/` folders in this skill are Windows junctions to `I:/Video Generation/Tools/comfy-film/`, which is the single editable copy shared with the DSH skill `comfy-film-dsh`; edit there, not in a copy. `run`/`doctor` start ComfyUI hidden if needed; await that process, without a second launcher. Default portrait canvas: H3 FL2VA Turbo 8, 24 fps, 768x1344; dimensions must be divisible by 32.
 
 ## Resume and context budget

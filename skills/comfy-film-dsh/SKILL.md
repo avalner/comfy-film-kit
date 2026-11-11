@@ -14,6 +14,29 @@ This is the DSH counterpart of the Codex `comfy-film` skill. The controller is s
 
 The Codex skill keeps its `scripts/` and `assets/` as Windows junctions to that folder, so both agents run byte-identical code and there is one place to edit. Always call the scripts by the absolute path above with the Python from `assets/machine.json`. Never duplicate or fork the controller; this skill only changes the surrounding workflow.
 
+## Paths — resolve once, before the first command
+
+Every command in this skill and in its references is written against the author's machine:
+
+| What | Literal in the text |
+|---|---|
+| the kit | `I:\Video Generation\Tools` |
+| ComfyUI | `I:\Video Generation\ComfyUI_windows_portable` |
+| the interpreter | `I:/Video Generation/ComfyUI_windows_portable/python_embeded/python.exe` |
+
+On any other machine those are wrong, and a command copied out of this document fails on a missing
+file — which reads like a broken install rather than a wrong path. Resolve them first:
+
+```powershell
+$P     = Get-Content '<kit>\paths.json' -Raw | ConvertFrom-Json   # <kit> is the one path you type
+$Tools = $P.tools; $Comfy = $P.comfy; $py = $P.python
+$film  = "$Tools/comfy-film/scripts/film.py"
+```
+
+`paths.json` is written by `install.ps1` and holds `tools`, `comfy`, `python`, `ffmpeg`, `ffprobe`.
+If it is missing, run `install.ps1` — do not guess a drive letter. When you quote a command to the
+user, quote the resolved one, not the literal from this text.
+
 ## Start of a session
 
 Two questions come before anything creative:

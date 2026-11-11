@@ -31,6 +31,7 @@ agent-model/
 # Templates are committed; the real files never are.
 comfy-film/assets/machine.json
 comfy-film/assets/youtube.json
+paths.json
 
 # ------------------------------------------------------------------- OS noise
 Thumbs.db

@@ -98,7 +98,24 @@ if ((Test-Path $exampleMachine) -and ($Force -or -not (Test-Path $machinePath)))
     $text = Get-Content $exampleMachine -Raw -Encoding UTF8
     $text = $text.Replace('<COMFYUI_ROOT>', $comfySlash).Replace('<TOOLS_ROOT>', $toolsSlash)
     Write-TextFile $machinePath $text
-    $script:done += "machine.json - created for $ComfyRoot"
+    # The template points at a made-up FFmpeg; use the one this machine actually has.
+    $ff = (Get-Command ffmpeg.exe -ErrorAction SilentlyContinue).Source
+    if (-not $ff) {
+        foreach ($candidate in @('C:\Program Files\Shotcut\ffmpeg.exe', 'C:\ffmpeg\bin\ffmpeg.exe')) {
+            if (Test-Path $candidate) { $ff = $candidate; break }
+        }
+    }
+    if ($ff) {
+        $obj = Get-Content $machinePath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $obj.ffmpeg = $ff.Replace('\', '/')
+        $obj.ffprobe = ($ff -replace 'ffmpeg\.exe$', 'ffprobe.exe').Replace('\', '/')
+        Write-TextFile $machinePath ($obj | ConvertTo-Json -Depth 8)
+        $script:done += "machine.json - created for $ComfyRoot (ffmpeg: $ff)"
+    }
+    else {
+        $script:done += "machine.json - created for $ComfyRoot"
+        $script:skipped += 'ffmpeg not found - set ffmpeg and ffprobe in machine.json'
+    }
 }
 
 # ---------------------------------------------------------------------- skills
@@ -137,6 +154,25 @@ if (-not $SkipCodex) {
     New-SkillLink (Join-Path $codexSkill 'scripts') (Join-Path $ToolsRoot 'comfy-film\scripts') 'codex\comfy-film\scripts'
     New-SkillLink (Join-Path $codexSkill 'assets') (Join-Path $ToolsRoot 'comfy-film\assets') 'codex\comfy-film\assets'
 }
+
+# ------------------------------------------------------------------- paths.json
+# The one file the skills resolve their paths from. The skill text is written against the author's
+# machine; this file is what makes the same commands work on somebody else's.
+$machinePath = Join-Path $ToolsRoot 'comfy-film\assets\machine.json'
+$machine = $null
+if (Test-Path $machinePath) { $machine = Get-Content $machinePath -Raw -Encoding UTF8 | ConvertFrom-Json }
+$pythonPath = if ($machine -and $machine.python) { $machine.python } else { $ComfyRoot.Replace('\', '/') + '/python_embeded/python.exe' }
+$ffmpegPath = if ($machine -and $machine.ffmpeg) { $machine.ffmpeg } else { 'ffmpeg' }
+$ffprobePath = if ($machine -and $machine.ffprobe) { $machine.ffprobe } else { 'ffprobe' }
+$paths = [ordered]@{
+    tools   = $ToolsRoot.Replace('\', '/')
+    comfy   = ($pythonPath -replace '/python_embeded/python\.exe$', '')
+    python  = $pythonPath
+    ffmpeg  = $ffmpegPath
+    ffprobe = $ffprobePath
+}
+Write-TextFile (Join-Path $ToolsRoot 'paths.json') ($paths | ConvertTo-Json)
+$script:done += 'paths.json - written (this is what the skills resolve against)'
 
 # --------------------------------------------------------------------- summary
 Write-Host ''

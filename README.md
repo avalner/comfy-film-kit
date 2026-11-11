@@ -72,16 +72,18 @@ Point it elsewhere with `-ToolsRoot`, `-ComfyRoot`, `-DshSkills`, `-CodexSkills`
 
 ### Porting to another machine
 
-The skills refer to the canonical location `I:\Video Generation\Tools` because that is
-where this kit is developed. If you clone somewhere else, either keep the folder at that
-path, or change the paths in the skill files once:
+Nothing in the controller is path-bound: `film.py` reads `machine.json` next to itself and takes
+project paths as arguments. The skill *text* is written against the canonical
+`I:\Video Generation\Tools`, so a machine that keeps the checkout elsewhere resolves it once:
 
 ```powershell
-Select-String -Path "skills\*\*.md" -Pattern 'I:/Video Generation/Tools' -List
+$P     = Get-Content '<kit>\paths.json' -Raw | ConvertFrom-Json
+$Tools = $P.tools; $py = $P.python; $film = "$Tools/comfy-film/scripts/film.py"
 ```
 
-`film.py` itself takes absolute paths on the command line, so the controller works from
-anywhere; only the prose in the skills is path-dependent.
+`install.ps1` writes `paths.json` (`tools`, `comfy`, `python`, `ffmpeg`, `ffprobe`); the agent
+substitutes those values for the literal paths in the skills. Nothing else depends on the drive
+letter. Keeping the checkout at the canonical path is still the zero-friction option.
 
 ## Configuration
 
