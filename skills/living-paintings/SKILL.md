@@ -5,11 +5,11 @@ description: Create videos in which a camera approaches a framed painting in a r
 
 # Living paintings
 
-Use this skill for the visual design and compositing of painting videos. Use the installed `comfy-film` controller for generation, reviews, recovery and final delivery: in Codex `~/.codex/skills/comfy-film/SKILL.md`, in DeepSeek Harness the `comfy-film-dsh` skill (`~/.dsh/skills/comfy-film-dsh/SKILL.md`). Both drive the same `$Tools/comfy-film/scripts/film.py`; only the surrounding tools differ. Read the relevant references as needed; do not recreate its controllers. For substantive H3 prompts use `h3-prompt-writing`.
+Use this skill for the visual design and compositing of painting videos. Use the installed `comfy-film` controller for generation, reviews, recovery and final delivery. It is the same controller in every agent — Codex (`~/.codex/skills/comfy-film/SKILL.md`), DeepSeek Harness (`~/.dsh/skills/comfy-film-dsh/SKILL.md`) and Claude Code (`~/.claude/skills/comfy-film-dsh/SKILL.md`) — all of them drive the same `$Tools/comfy-film/scripts/film.py`; only the surrounding tools differ. Read the relevant references as needed; do not recreate its controllers. For substantive H3 prompts use `h3-prompt-writing`.
 
-## Harness differences (DeepSeek Harness)
+## Harness differences (Codex → DeepSeek Harness / Claude Code)
 
-| Codex habit | DSH replacement |
+| Codex habit | What to do instead |
 |---|---|
 | Codex browser panel for the progress page | Start `progress.py --serve` as a background job and post the verified URL from `.pipeline/progress-server.json` |
 | Menu tool for accept/change/reject | `ask_user_question` with two-word labels; links and numbers belong in the message above it |

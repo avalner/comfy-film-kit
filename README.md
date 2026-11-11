@@ -9,10 +9,9 @@ small — one controller, a handful of check scripts, four skills and two option
 upscalers — and every rule that experience paid for is written into the skills
 instead of living in somebody's head.
 
-The same scripts drive two different agents on the same machine: **Codex** and
-**DeepSeek Harness (DSH)**. Both call the identical `film.py`; only the surrounding
-tool names differ (a browser panel versus an HTTP preview server, a menu tool versus
-`ask_user_question`).
+The same scripts drive three different agents on the same machine: **DeepSeek Harness (DSH)**,
+**Codex** and **Claude Code**. All of them call the identical `film.py`; only the surrounding tool
+names differ (a browser panel versus an HTTP preview server, a menu tool versus `ask_user_question`).
 
 ---
 
@@ -35,7 +34,7 @@ tool names differ (a browser panel versus an HTTP preview server, a menu tool ve
 | `comfy-film/assets/machine.example.json` | Machine profile template — Python, ComfyUI startup, FFmpeg. |
 | `comfy-film/assets/youtube.example.json` | Channel profile template. |
 | `comfy-film/tests/test_pipeline.py` | Ten tests against a fake ComfyUI API. No GPU, ~13 s. |
-| `skills/comfy-film-dsh/` | Skill for DeepSeek Harness: workflow, gates, references, and the check scripts (`motion_profile.py`, `keyframe_check.py`, `prompt_lint.py`, `serve-media.py`, `finalize_delivery.py`, SeedVR2 upscale). |
+| `skills/comfy-film-dsh/` | The canonical film skill (DeepSeek Harness, Codex, Claude Code): workflow, gates, references, and the check scripts (`motion_profile.py`, `keyframe_check.py`, `prompt_lint.py`, `serve-media.py`, `finalize_delivery.py`, SeedVR2 upscale). |
 | `skills/comfy-film/` | Skill for Codex. Same controller, Codex-shaped instructions. |
 | `skills/living-paintings/` | A separate genre skill: a camera approaches a framed painting, the scene comes alive, the camera pulls back. |
 | `skills/h3-prompt-writing/` | The prompt format itself: `references/base-en.txt` and `ref-en.txt`. Read before writing any substantive H3 prompt. |
@@ -276,7 +275,7 @@ the other one is requested, so the page never contradicts the message next to it
 
 | Skill | Load it when |
 |---|---|
-| `comfy-film-dsh` | Any film production inside DeepSeek Harness: gates, media links, progress panel, review rules. |
+| `comfy-film-dsh` | Any film production — DeepSeek Harness, Claude Code, any agent: gates, media links, progress panel, review rules. |
 | `comfy-film` | The same work inside Codex. |
 | `living-paintings` | A painting video: approach, animation, retreat, and the deterministic compositing that keeps the artwork sharp. |
 | `h3-prompt-writing` | Before writing a substantive H3 prompt. Header timecode, shot blocks, soundscape, what the model ignores. |

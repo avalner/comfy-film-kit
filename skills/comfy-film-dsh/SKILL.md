@@ -1,11 +1,12 @@
 ---
 name: comfy-film-dsh
-description: ComfyUI MiniMax H3 short-film production — generate, review and assemble shorts with the portable film.py controller. Written for DeepSeek Harness; the tool names map to any agent that reads files and runs shell commands.
+description: ComfyUI MiniMax H3 short-film production — generate, review and assemble shorts with the portable film.py controller. Runs in DeepSeek Harness, Codex and Claude Code; the tool names map between agents.
 ---
 
-# ComfyUI films in DeepSeek Harness
+# ComfyUI films
 
-This is the DSH counterpart of the Codex `comfy-film` skill. The controller is shared and now lives outside Codex:
+This text is loaded by DeepSeek Harness; Codex and Claude Code read the same file through their own
+skill folders, which is why it names DSH tools and then maps them.
 
 `$Tools/comfy-film/`
 
@@ -43,7 +44,7 @@ $film      = "$Tools/comfy-film/scripts/film.py"
 letter, and do not run a command whose variables you have not resolved. When you quote a command to
 the user, quote it with these values filled in.
 
-## If you are not DeepSeek Harness
+## If you are Claude Code or another agent
 
 This text names DSH tools; read them as capabilities, not product names. Claude Code and any other
 agent needs only these four mappings — everything else (paths, `film.py`, the review gates, the
