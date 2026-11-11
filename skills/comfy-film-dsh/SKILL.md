@@ -1,6 +1,6 @@
 ---
 name: comfy-film-dsh
-description: ComfyUI MiniMax H3 short-film production inside DeepSeek Harness — generate, review and assemble creature shorts with the portable film.py controller, adapted to DSH tools (no Codex browser panel, no sub-agent delegation, media shown via local player and HTTP links).
+description: ComfyUI MiniMax H3 short-film production — generate, review and assemble shorts with the portable film.py controller. Written for DeepSeek Harness; the tool names map to any agent that reads files and runs shell commands.
 ---
 
 # ComfyUI films in DeepSeek Harness
@@ -42,6 +42,19 @@ $film      = "$Tools/comfy-film/scripts/film.py"
 `series`, `paintings`, `media`. If the file is missing, run `install.ps1` — do not guess a drive
 letter, and do not run a command whose variables you have not resolved. When you quote a command to
 the user, quote it with these values filled in.
+
+## If you are not DeepSeek Harness
+
+This text names DSH tools; read them as capabilities, not product names. Claude Code and any other
+agent needs only these four mappings — everything else (paths, `film.py`, the review gates, the
+prompt rules) is agent-independent.
+
+| Named here | Means | Claude Code / other agents |
+|---|---|---|
+| `ask_user_question` | put a choice to the user | ask in chat with two or three short numbered options |
+| `run_in_background` + `job_output` | start a long command, collect it later | your own background job or `wait`; never poll in a loop |
+| `present` | hand over a finished file | link or attach the file |
+| "DSH has no browser" | nothing to automate | skip that step |
 
 ## Start of a session
 

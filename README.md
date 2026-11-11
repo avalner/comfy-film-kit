@@ -62,11 +62,15 @@ Clone it wherever you like: `film.py` takes absolute paths on the command line a
 where the checkout lives. The skills do — they are written against the canonical
 `I:\Video Generation\Tools`, so a checkout elsewhere needs the one-time fix in **Porting** below.
 
-`install.ps1` does three things:
+`install.ps1` does four things:
 
-1. Creates `comfy-film/assets/machine.json` from `machine.example.json`, substituting your ComfyUI root.
-2. Links `skills/*` into the agent skill folders (`%USERPROFILE%\.dsh\skills`, `%USERPROFILE%\.codex\skills`) as NTFS junctions, so the repository stays the single editable copy.
-3. Reports anything it skipped. Nothing is overwritten without `-Force`.
+1. Creates `comfy-film/assets/machine.json` from `machine.example.json` — only when it can see a
+   ComfyUI; otherwise it says so and writes nothing (no guessed drive letters).
+2. Links `skills/*` into the agent skill folders as NTFS junctions, so the repository stays the
+   single editable copy: DeepSeek Harness (`~/.dsh/skills`), Codex (`~/.codex/skills`) and, when
+   Claude Code is installed, `~/.claude/skills` (`-ClaudeSkills`, `-SkipClaude`).
+3. Writes `paths.json` — the file every skill resolves its variables from.
+4. Reports anything it skipped. Nothing is overwritten without `-Force`.
 
 Point it elsewhere with `-ToolsRoot`, `-ComfyRoot`, `-DshSkills`, `-CodexSkills`, `-SkipCodex`.
 
@@ -238,6 +242,18 @@ the other one is requested, so the page never contradicts the message next to it
 The skills are the valuable part of this repository. The scripts make the mechanics
 possible; the skills are what stop the model from producing a beautiful clip where
 nobody moves.
+
+### Which agent
+
+| Agent | How it is wired | Caveat |
+|---|---|---|
+| DeepSeek Harness | `~/.dsh/skills/*` junctions, `comfy-film-dsh` is the maintained text | none — this is the primary target |
+| Codex | `~/.codex/skills/comfy-film` (SKILL.md copy + `scripts`/`assets` junctions) | its text is a sibling of the DSH one and points at the shared references; refresh with `install.ps1 -Force` |
+| Claude Code | `~/.claude/skills/*` junctions when `~/.claude` exists | the text names DSH tools; the "If you are not DeepSeek Harness" table maps them |
+| anything else | link `skills/comfy-film-dsh` into that agent's skill folder by hand | same mapping table applies |
+
+One maintained film text is the point: `comfy-film-dsh` is canonical, and the Codex copy exists only
+because that agent's habits differ (browser panel, sub-agent delegation).
 
 ## What is deliberately not committed
 

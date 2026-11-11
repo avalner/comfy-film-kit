@@ -21,11 +21,13 @@ param(
     [string]$ComfyRoot = '',
     [string]$DshSkills,
     [string]$CodexSkills,
+    [string]$ClaudeSkills,
     [string]$FilmsPath = '',
     [string]$SeriesPath = '',
     [string]$PaintingsPath = '',
     [string]$MediaRootPath = '',
     [switch]$SkipCodex,
+    [switch]$SkipClaude,
     [switch]$Force
 )
 
@@ -34,6 +36,7 @@ $ErrorActionPreference = 'Stop'
 if (-not $ToolsRoot) { $ToolsRoot = $PSScriptRoot }
 if (-not $DshSkills) { $DshSkills = Join-Path $HOME '.dsh\skills' }
 if (-not $CodexSkills) { $CodexSkills = Join-Path $HOME '.codex\skills' }
+if (-not $ClaudeSkills) { $ClaudeSkills = Join-Path $HOME '.claude\skills' }
 
 $ToolsRoot = (Resolve-Path $ToolsRoot).Path.TrimEnd('\')
 
@@ -177,6 +180,25 @@ if (-not $SkipCodex) {
     }
     New-SkillLink (Join-Path $codexSkill 'scripts') (Join-Path $ToolsRoot 'comfy-film\scripts') 'codex\comfy-film\scripts'
     New-SkillLink (Join-Path $codexSkill 'assets') (Join-Path $ToolsRoot 'comfy-film\assets') 'codex\comfy-film\assets'
+}
+
+# Claude Code reads ~/.claude/skills. Wire it only when Claude is actually installed, or when the
+# caller names the folder — nobody needs a ~/.claude tree on a machine that has no Claude.
+$claudeHome = Split-Path $ClaudeSkills -Parent
+$wantClaude = $PSBoundParameters.ContainsKey('ClaudeSkills') -or (Test-Path $claudeHome)
+if ($SkipClaude) {
+    $script:skipped += 'claude\* - skipped (-SkipClaude)'
+}
+elseif ($wantClaude) {
+    foreach ($name in $skillNames) {
+        $target = Join-Path $ToolsRoot "skills\$name"
+        if (Test-Path $target) {
+            New-SkillLink (Join-Path $ClaudeSkills $name) $target "claude\$name"
+        }
+    }
+}
+else {
+    $script:skipped += 'claude\* - Claude not installed (pass -ClaudeSkills to wire it anyway)'
 }
 
 # ------------------------------------------------------------------- paths.json
