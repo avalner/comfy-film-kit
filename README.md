@@ -172,6 +172,12 @@ Full syntax: `skills/comfy-film-dsh/references/commands.md`.
 The agent asks this first, because it decides the model download, the prompt shape and what the
 reviewer looks at. Details: `skills/comfy-film-dsh/references/modes.md`.
 
+Short takes run the same graph the H3 Workspace app does: a sigma shift (10/3), the kitchen attention
+backend and block-sparse (VSA) attention by default. `--quality fast` switches to the Turbo-SLA
+4-step route with dense attention — measured 30 s → 15 s for a 5 s take at 384×672, at the cost of a
+softer texture; `--attention dense` keeps the steps but drops VSA. Every take also saves a 17-token
+latent tail, which `film add --chain latent` can continue from instead of decoded frames.
+
 ## First run on a machine that has nothing
 
 ```powershell

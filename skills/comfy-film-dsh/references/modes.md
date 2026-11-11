@@ -62,6 +62,14 @@ film add --project PROJECT --guide prev --guide-frames 22 --last board-2.png --p
 - Build the whole film at 384×672 first (`film preview`), approve the cut, then re-shoot at native.
   This is non-negotiable 12 and it is exactly where a `long` film burns its money.
 
+**The second continuation, from the workspace.** `film add --chain latent` starts the take from the
+previous sampler's saved latent tail instead of decoded frames: no keyframes at all, the scene is
+described by the prompt, and the take generates `kept + overlap` frames and cuts the overlap. Ported
+and measured 2026-11-11 at 384×672: the overlap is regenerated rather than pinned (join difference
+45/255, no frame of the previous take matched), so it buys motion context, not a seamless join. Use
+it when the scene should evolve into a new beat; keep `--guide prev` when the join itself must be
+invisible. Details and the arithmetic: `commands.md`.
+
 ## refs — references (Ref2VA)
 
 ```powershell

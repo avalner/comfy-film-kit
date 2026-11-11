@@ -30,6 +30,35 @@ film wait --project PROJECT
 
 Omitting --first on a later clip automatically extracts the preceding accepted clip's last frame, upscales 2x without redrawing and uses it. Omit --last for first-frame-only continuation. Use --loop instead of --last for a final clip ending on the actual first frame of the first accepted clip. An explicit --first can start an intentional new scene. Both references are identically cover-cropped to the selected canvas: choose a canvas close to the intended composition to avoid cropping important content.
 
+- **`--chain latent`** (see below) is the third way to continue: the previous sampler's latent.
+- Without `--guide`, a later take starts from the previous clip's extracted last frame — a still pose,
+  which is what a beat that must continue motion does *not* want.
+
+## Latent chain (`--chain latent`)
+
+The workspace's method, ported: instead of feeding the previous clip back as decoded frames, a take
+starts from the previous sampler's saved latent tail (17 tokens), concatenated to its own conditioning
+latent and cut back to length, so clips join end to end.
+
+```powershell
+film add --project PROJECT --chain latent --prompt-file PART-2.txt --seconds 6
+```
+
+- **No keyframes**: `--first`, `--last`, `--loop` and `--guide` are refused. The scene is described by
+  the prompt; the first take of a film still needs its board.
+- Every take saves `tail.latent` (17 tokens, ~1.6 MB) next to its candidate, so any accepted take can
+  be chained later.
+- The take generates `kept + overlap` frames and keeps `kept`. The overlap snaps to H3's 17k+5 grid:
+  for a 5 s take at the default `--chain-overlap 0.9`, 34 frames (1.4 s) are generated twice and cut.
+- Kept plus overlap must stay at or under 15 s.
+- Measured 2026-11-11, 384x672, 5 s, fast route: the overlap is **regenerated, not pinned** — the
+  first shown frame of take 2 differed from the last frame of take 1 by 45/255 mean, and no frame of
+  take 1 matched it. The mask passes `SetLatentNoiseMask` → `LTXVConcatAVLatent` without error, so
+  this build does not hold the masked region through `SamplerCustomAdvanced`. The chain buys motion
+  context (the sampler starts from the previous latent instead of noise), not a pixel-exact join.
+- For a seam-free join keep `--guide prev --guide-frames 22 --last board.png`. Use `--chain latent`
+  when the scene should *evolve* into a new beat rather than continue the same one.
+
 ## References (Ref2VA)
 
 ```powershell

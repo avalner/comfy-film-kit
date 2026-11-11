@@ -363,7 +363,8 @@ def init_project(args):
         if getattr(args, k, None):
             config[k] = getattr(args, k)
     config.update(width=args.width, height=args.height, fps=args.fps, quality=args.quality,
-                  audio=args.audio, music=args.music, segment_seconds=args.seconds)
+                  audio=args.audio, music=args.music, segment_seconds=args.seconds,
+                  attention=args.attention, preview=args.preview == "on")
     if not 4 <= args.seconds <= 15:
         raise FilmError("Default segment duration must be 4–15 seconds")
     if args.audio == "silent" and args.music == "generated":
@@ -373,7 +374,7 @@ def init_project(args):
         switch = bindings.get("turbo") or (switches[0] if len(switches) == 1 else None)
         if switch not in graph:
             raise FilmError("Quality selector ambiguous; provide bindings.turbo or --quality workflow for a custom graph")
-        graph[switch]["inputs"]["value"] = args.quality == "turbo"
+        graph[switch]["inputs"]["value"] = args.quality in ("turbo", "fast")
     if args.width % 32 or args.height % 32 or args.fps != 24:
         raise FilmError("This H3 template requires dimensions divisible by 32 and 24 fps")
     data = root / ".pipeline"
@@ -456,6 +457,110 @@ def guide_skip(config, path, frames, tail_trim_frames=0):
     return skip, total
 
 
+def latent_tokens(frames):
+    """H3's video latent grid: 17 frames carry 5 tokens, plus two boundary tokens."""
+    return round((frames - 5) / 17 * 5 + 2)
+
+
+def snap_frames(value):
+    f = int(round(value))
+    return f + (5 - f % 17) % 17
+
+
+LATENT_TAIL_TOKENS = 17
+
+
+def add_tail(graph, prefix):
+    """Save the last 17 latent tokens of the take: the next take can continue from them instead of
+    from decoded frames. Cheap, and it makes any accepted take chainable later."""
+    samplers = of_class(graph, "SamplerCustomAdvanced")
+    if len(samplers) != 1 or "chain-save" in graph:
+        return None
+    graph["chain-sep"] = {"class_type": "LTXVSeparateAVLatent", "inputs": {"av_latent": [samplers[0], 1]}}
+    graph["chain-tail"] = {"class_type": "LatentCut", "inputs": {
+        "samples": ["chain-sep", 0], "dim": "t", "index": -LATENT_TAIL_TOKENS, "amount": LATENT_TAIL_TOKENS}}
+    graph["chain-save"] = {"class_type": "SaveLatent", "inputs": {"samples": ["chain-tail", 0],
+                                                                  "filename_prefix": prefix}}
+    return "chain-save"
+
+
+def chain_graph(root, p, s, cfg):
+    """Latent continuation, as minimax-h3-workspace does it.
+
+    Instead of feeding the previous clip back as decoded frames, the take starts from the previous
+    sampler's latent tail: 17 tokens are cut from the saved `.latent`, concatenated to this take's
+    conditioning latent and masked so only the overlap is free — the rest is kept as the model left
+    it. The overlap is cut off again before the clip is saved, so clips join end to end.
+
+    The take generates `kept + overlap` frames and keeps `kept`.
+    """
+    graph = read(root / ".pipeline" / "workflow-api.json")
+    bind = p["bindings"]
+    gen_id = bind["generator"]
+    fps = float(cfg.get("fps", 24))
+    kept = snap_frames(s["seconds"] * fps)
+    overlap = float(s["chain"].get("overlap", 1.0))
+    total = snap_frames(kept + snap_frames(overlap * fps))
+    ov = total - kept
+    if total > 15 * fps:
+        raise FilmError("A chained take generates kept+overlap seconds; keep the sum at or under 15 s")
+
+    state = root / s["chain"]["state"]
+    if not state.is_file():
+        raise FilmError("The previous take's saved latent is missing: " + str(state))
+    state_name = upload(cfg, state, "comfy_film/" + p["id"])
+
+    graph[gen_id]["inputs"].pop("first_frame", None)
+    if "last" not in s:
+        graph[gen_id]["inputs"].pop("last_frame", None)
+    graph[gen_id]["inputs"]["length"] = total
+
+    graph["chain-new"] = {"class_type": "LTXVSeparateAVLatent", "inputs": {"av_latent": [gen_id, 1]}}
+    graph["chain-state"] = {"class_type": "LoadLatent", "inputs": {"latent": state_name}}
+    t_ov, t_tot = latent_tokens(ov), latent_tokens(total)
+    graph["chain-cut"] = {"class_type": "LatentCut", "inputs": {
+        "samples": ["chain-state", 0], "dim": "t", "index": -t_ov, "amount": t_ov}}
+    graph["chain-cat"] = {"class_type": "LatentConcat", "inputs": {
+        "samples1": ["chain-cut", 0], "samples2": ["chain-new", 0], "dim": "t"}}
+    graph["chain-cut2"] = {"class_type": "LatentCut", "inputs": {
+        "samples": ["chain-cat", 0], "dim": "t", "index": 0, "amount": t_tot}}
+    lw, lh = max(1, round(cfg["width"] / 16)), max(1, round(cfg["height"] / 16))
+    graph["chain-black"] = {"class_type": "EmptyImage", "inputs": {
+        "width": lw, "height": lh, "batch_size": t_ov, "color": 0}}
+    graph["chain-white"] = {"class_type": "EmptyImage", "inputs": {
+        "width": lw, "height": lh, "batch_size": max(1, t_tot - t_ov), "color": 16777215}}
+    graph["chain-maskimg"] = {"class_type": "ImageBatch", "inputs": {
+        "image1": ["chain-black", 0], "image2": ["chain-white", 0]}}
+    graph["chain-mask"] = {"class_type": "ImageToMask", "inputs": {
+        "image": ["chain-maskimg", 0], "channel": "red"}}
+    graph["chain-masked"] = {"class_type": "SetLatentNoiseMask", "inputs": {
+        "samples": ["chain-cut2", 0], "mask": ["chain-mask", 0]}}
+    graph["chain-av"] = {"class_type": "LTXVConcatAVLatent", "inputs": {
+        "video_latent": ["chain-masked", 0], "audio_latent": ["chain-new", 1]}}
+
+    sampler = next(k for k, v in graph.items() if v["class_type"] == "SamplerCustomAdvanced")
+    graph[sampler]["inputs"]["latent_image"] = ["chain-av", 0]
+
+    decode = next(k for k, v in graph.items() if v["class_type"] == "VAEDecode")
+    graph["chain-keep"] = {"class_type": "ImageFromBatch", "inputs": {
+        "image": [decode, 0], "batch_index": ov, "length": total - ov}}
+    creator = next(k for k, v in graph.items() if v["class_type"] == "CreateVideo")
+    graph[creator]["inputs"]["images"] = ["chain-keep", 0]
+
+    audio_decode = next((k for k, v in graph.items() if v["class_type"] == "VAEDecodeAudio"), None)
+    if audio_decode:
+        graph["chain-audio"] = {"class_type": "TrimAudioDuration", "inputs": {
+            "audio": [audio_decode, 0], "start_index": round(ov / fps, 3),
+            "duration": round((total - ov) / fps, 3)}}
+        graph[creator]["inputs"]["audio"] = ["chain-audio", 0]
+
+    # the tail this take hands to the next one
+    add_tail(graph, f"comfy_film/{p['id']}/tail-{s['number']:04d}")
+
+    s["chain"].update(frames={"kept": total - ov, "overlap": ov, "total": total})
+    return graph, ["chain-save"]
+
+
 def extend_graph(root, p, s, cfg):
     """API graph for continuation: the tail of the previous clip is anchored at frame 0 as a moving guide.
 
@@ -527,7 +632,18 @@ def add_segment(args, root, p):
             raise FilmError("H3 segment duration must be 4–15 seconds; assemble as many segments as needed")
         s["seconds"] = seconds
         s["prompt"] = copy_input(root, args.prompt_file, folder / "prompt.txt")
-        if getattr(args, "text_only", False):
+        if getattr(args, "chain", "frames") == "latent":
+            if args.first or args.last or args.loop or getattr(args, "guide", None):
+                raise FilmError("--chain latent continues the previous latent: do not pass --first/--last/--guide/--loop")
+            if not p["segments"]:
+                raise FilmError("The first take of a film needs a keyframe; run it without --chain latent")
+            previous = p["segments"][-1]
+            if "latent_tail" not in previous:
+                raise FilmError("The previous take has no saved latent tail (it was rendered before "
+                                "--chain latent, or its tail was not collected). Re-run it or use the frame guide.")
+            s["chain"] = {"mode": "latent", "overlap": float(getattr(args, "chain_overlap", 1.0)),
+                          "state": previous["latent_tail"]}
+        elif getattr(args, "text_only", False):
             if args.first or args.last or args.loop or args.guide:
                 raise FilmError("--text-only cannot be combined with frame or guide inputs")
             s["text_only"] = True
@@ -599,6 +715,8 @@ def add_segment(args, root, p):
         mode = "t2va"
     if s.get("ref2va"):
         mode = "ref2va+" + mode
+    if s.get("chain"):
+        mode = "latent"
     result = {"segment": number, "status": s["status"], "mode": mode,
               "next": "accept" if s["status"] == "review" else "run",
               "first_frame": str(root / s["first"]) if "first" in s else None,
@@ -611,7 +729,85 @@ def add_segment(args, root, p):
     return result
 
 
+def of_class(graph, cls):
+    return [k for k, v in graph.items() if v.get("class_type") == cls]
+
+
+def bypass(graph, node_id):
+    """Drop a model-chain node: every input that read its single MODEL output reads its input instead."""
+    node = graph.get(node_id)
+    if not node:
+        return
+    source = node["inputs"].get("model")
+    if not source:
+        return
+    for other in graph.values():
+        for key, value in list(other["inputs"].items()):
+            if isinstance(value, list) and len(value) == 2 and value[0] == node_id:
+                other["inputs"][key] = source
+    graph.pop(node_id, None)
+
+
+SLA_LORA = "minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors"
+
+
+def apply_route(graph, cfg):
+    """The workspace's two routes: the default dense-quality chain, and a fast one.
+
+    fast  — Turbo-SLA LoRA, 4 steps, shifts 6/3, sparse attention OFF (VSA left square mosaic
+            artefacts on busy scenes; dense attention is still ~1.3x faster)
+    dense — the same chain as default but without BlockSparseAttention
+    """
+    quality = cfg.get("quality", "turbo")
+    if quality == "workflow":
+        return graph
+    if quality == "fast" or cfg.get("attention") == "dense":
+        for node in of_class(graph, "BlockSparseAttention"):
+            bypass(graph, node)
+    if quality == "fast":
+        for node in of_class(graph, "MiniMaxH3SigmaShift"):
+            graph[node]["inputs"].update(shift_video=6.0, shift_audio=3.0)
+        loras = of_class(graph, "LoraLoaderModelOnly")
+        if len(loras) == 1:
+            names = server_loras(cfg)
+            choice = next((n for n in names if n.split("\\")[-1] == SLA_LORA), None)
+            if not choice:
+                choice = next((n for n in names if "sla" in n.lower()), None)
+            if not choice:
+                raise FilmError("The fast route needs the Turbo-SLA LoRA (" + SLA_LORA
+                                + "); install it or keep --quality turbo")
+            graph[loras[0]]["inputs"]["lora_name"] = choice
+            graph[loras[0]]["inputs"]["strength_model"] = 1.0
+        for scheduler in of_class(graph, "BasicScheduler"):
+            link = graph[scheduler]["inputs"].get("steps")
+            if isinstance(link, list) and link[0] in graph and graph[link[0]]["class_type"] == "ComfySwitchNode":
+                step_nodes = [graph[x[0]]["inputs"] for x in graph[link[0]]["inputs"].values()
+                              if isinstance(x, list) and x[0] in graph and graph[x[0]]["class_type"] == "PrimitiveInt"]
+                for inputs in step_nodes:
+                    inputs["value"] = 4
+    return graph
+
+
+def apply_preview(graph, cfg):
+    """KJNodes' animated live preview: a few frames of the latent every step instead of one still."""
+    if not cfg.get("preview") or of_class(graph, "ModelPreviewOverrideKJ"):
+        return graph
+    guider, scheduler = of_class(graph, "BasicGuider"), of_class(graph, "BasicScheduler")
+    if len(guider) != 1 or len(scheduler) != 1:
+        return graph
+    model = graph[guider[0]]["inputs"].get("model")
+    if not model:
+        return graph
+    graph["preview"] = {"class_type": "ModelPreviewOverrideKJ", "inputs": {
+        "model": model, "max_resolution": 512, "jpeg_quality": 75,
+        "suppress_default_preview": False, "preview_frames": 12, "preview_fps": 8}}
+    graph[guider[0]]["inputs"]["model"] = ["preview", 0]
+    graph[scheduler[0]]["inputs"]["model"] = ["preview", 0]
+    return graph
+
+
 def prune(graph, output):
+    outputs = output if isinstance(output, (list, tuple)) else [output]
     keep = set()
     def visit(key):
         if key in keep:
@@ -620,7 +816,8 @@ def prune(graph, output):
         for v in graph[key].get("inputs", {}).values():
             if isinstance(v, list) and len(v) == 2 and str(v[0]) in graph and isinstance(v[1], int):
                 visit(str(v[0]))
-    visit(output)
+    for node in outputs:
+        visit(node)
     return {k: {"class_type": graph[k]["class_type"], "inputs": graph[k]["inputs"]} for k in graph if k in keep}
 
 
@@ -628,12 +825,21 @@ _LORA_CACHE = {}
 
 
 def server_loras(cfg):
-    """Names ComfyUI will accept in LoraLoaderModelOnly, from the live /object_info."""
+    """Names ComfyUI will accept in LoraLoaderModelOnly, from the live /object_info.
+
+    Old ComfyUI returns [[names], {...}], newer ones ["COMBO", {"options": [...]}]: accept both.
+    """
     key = cfg["server"].rstrip("/")
     if key not in _LORA_CACHE:
         info = api(cfg, "/object_info/LoraLoaderModelOnly")
-        names = ((info.get("LoraLoaderModelOnly") or {}).get("input") or {}).get("required", {}).get("lora_name")
-        _LORA_CACHE[key] = list(names[0]) if names else []
+        spec = (((info.get("LoraLoaderModelOnly") or {}).get("input") or {}).get("required") or {}).get("lora_name")
+        names = []
+        if spec:
+            if isinstance(spec[0], list):
+                names = spec[0]
+            elif isinstance(spec[1], dict):
+                names = spec[1].get("options") or []
+        _LORA_CACHE[key] = [n for n in names if isinstance(n, str)]
     return _LORA_CACHE[key]
 
 
@@ -764,7 +970,13 @@ def submit(args, root, p):
         s["seconds"] = args.seconds
     if args.prompt_file:
         s["prompt"] = copy_input(root, args.prompt_file, folder / "prompt.txt")
-    graph = extend_graph(root, p, s, cfg) if s.get("guide") else read(root / ".pipeline" / "workflow-api.json")
+    extra_outputs = []
+    if s.get("guide"):
+        graph = extend_graph(root, p, s, cfg)
+    elif s.get("chain", {}).get("mode") == "latent":
+        graph, extra_outputs = chain_graph(root, p, s, cfg)
+    else:
+        graph = read(root / ".pipeline" / "workflow-api.json")
     bind = p["bindings"]
     for label in ["first", "last"]:
         if label in s:
@@ -777,8 +989,9 @@ def submit(args, root, p):
         gen.pop("first_frame", None)
         gen.pop("last_frame", None)
     gen.update(prompt=(root / s["prompt"]).read_text(encoding="utf-8-sig"), width=cfg["width"], height=cfg["height"])
-    n = max(5, round(s["seconds"] * 24))
-    gen["length"] = n + (5 - n % 17) % 17
+    if not s.get("chain"):
+        n = max(5, round(s["seconds"] * 24))
+        gen["length"] = n + (5 - n % 17) % 17
     if "last" not in s:
         gen.pop("last_frame", None)
     seed = args.seed if args.seed is not None else secrets.randbelow(2 ** 50)
@@ -800,7 +1013,14 @@ def submit(args, root, p):
         apply_adapters(graph, adapters)
     elif "adapters" in s:
         s.pop("adapters")
-    graph = prune(graph, bind["save"])
+    # Ref2VA brings its own model, LoRA, shifts and step count: leave that chain alone.
+    if not s.get("ref2va"):
+        graph = apply_route(graph, cfg)
+    graph = apply_preview(graph, cfg)
+    tail = add_tail(graph, f"comfy_film/{p['id']}/tail-{s['number']:04d}")
+    if tail and tail not in extra_outputs:
+        extra_outputs.append(tail)
+    graph = prune(graph, [bind["save"]] + extra_outputs)
     attempt = {"id": attempt_id, "seed": seed, "submitted_at": time.time(), "prefix": prefix,
                "client_id": "film-" + attempt_id}
     s["attempts"].append(attempt)
@@ -863,6 +1083,24 @@ def collect(root, p, s):
         shutil.copyfileobj(r, dst)
     os.replace(temp, review)
     info = probe(p["config"], review)
+
+    # The latent tail rides along in the same job; it is what a chained take continues from.
+    latents = []
+    for node in entry.get("outputs", {}).values():
+        for value in node.values():
+            if isinstance(value, list):
+                latents += [f for f in value if isinstance(f, dict)
+                            and Path(f.get("filename", "")).suffix.lower() == ".latent"]
+    if latents:
+        f = latents[0]
+        query = urllib.parse.urlencode({k: f.get(k, "output" if k == "type" else "") for k in ["filename", "subfolder", "type"]})
+        folder = root / ".pipeline" / "segments" / f"{s['number']:04d}"
+        folder.mkdir(parents=True, exist_ok=True)
+        dest = folder / "tail.latent"
+        with urllib.request.urlopen(p["config"]["server"].rstrip("/") + "/view?" + query, timeout=120) as r, dest.open("wb") as dst:
+            shutil.copyfileobj(r, dst)
+        s["latent_tail"] = artifact(root, dest)
+
     s.update(status="review", review=artifact(root, review), media=info)
     attempt["completed_at"] = time.time()
     save(root, p)
@@ -1133,7 +1371,13 @@ def build_parser():
             a.add_argument("--width", type=int, default=768)
             a.add_argument("--height", type=int, default=1344)
             a.add_argument("--fps", type=int, default=24)
-            a.add_argument("--quality", choices=["turbo", "standard", "workflow"], default="turbo")
+            a.add_argument("--quality", choices=["turbo", "standard", "fast", "workflow"], default="turbo",
+                           help="turbo: 8 steps; standard: 20 steps; fast: 4 steps with the Turbo-SLA LoRA; "
+                                "workflow: leave the graph as saved")
+            a.add_argument("--attention", choices=["vsa", "dense"], default="vsa",
+                           help="vsa: sparse attention (faster, lighter); dense: plain attention")
+            a.add_argument("--preview", choices=["on", "off"], default="on",
+                           help="animated live preview during sampling (ComfyUI-KJNodes)")
             a.add_argument("--audio", choices=["generated", "silent"], default="generated")
             a.add_argument("--music", choices=["none", "generated", "later"], default="none")
             a.add_argument("--seconds", type=float, default=10)
@@ -1145,6 +1389,12 @@ def build_parser():
             a.add_argument("--guide", nargs="?", const="prev",
                            help="continue an existing clip: 'prev' (default) for the accepted previous segment, or a path")
             a.add_argument("--guide-frames", type=int, default=22)
+            a.add_argument("--chain", choices=["frames", "latent"], default="frames",
+                           help="how a later take continues: 'frames' feeds the previous clip back as a guide, "
+                                "'latent' continues the previous sampler's latent tail (no keyframe, prompt only)")
+            a.add_argument("--chain-overlap", type=float, default=0.9,
+                           help="seconds of the previous take the latent chain re-generates and cuts off "
+                                "(the effective value snaps to H3's 17k+5 grid)")
             a.add_argument("--ref2va", action="append", metavar="IMAGE",
                            help="reference picture for Ref2VA (repeatable, 1-9); combines with --first/--last/--guide")
             a.add_argument("--ref2va-model", metavar="UNET",
