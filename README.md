@@ -21,6 +21,9 @@ tool names differ (a browser panel versus an HTTP preview server, a menu tool ve
 | Path | What it is |
 |---|---|
 | `comfy-film/scripts/film.py` | The controller. Owns the project record, the ComfyUI job, the guide/continuation graph, trims, joins, stitching and the CLI. |
+| `comfy-film/scripts/lipsync.py` | The audio-driven mode: MiniMax H3 Ref2V + native audio lock, two passes, one take. |
+| `setup/install-comfy.ps1` | Installs ComfyUI, node packs, models per mode and FFmpeg on a bare machine; `-Check` reports without downloading. |
+| `setup/catalog.json` | The installer's data: ComfyUI build, pinned node commits, model URLs/sizes, mode→model mapping. |
 | `comfy-film/scripts/finalize.py` | Turns an accepted assembly into `<name>-final-vN.mp4`: H.264 `yuv420p`, AAC, `+faststart`, decode verified. |
 | `comfy-film/scripts/progress.py` | Local progress panel (`--serve`) for long renders. |
 | `comfy-film/scripts/youtube*.py` | Direct OAuth upload, playlist management, metadata. No browser upload, no intermediary service. |
@@ -156,6 +159,39 @@ $film = 'I:\Video Generation\Tools\comfy-film\scripts\film.py'
 Every command prints a compact JSON object and fails with a non-zero exit code.
 
 Full syntax: `skills/comfy-film-dsh/references/commands.md`.
+
+## Four modes, one setup
+
+| Mode | What it makes | Controller |
+|---|---|---|
+| `video` | one clip from a first frame (I2VA) or a first and a last frame (FL2VA) | `film.py` |
+| `long` | chained takes: each one starts on the previous clip's pixels | `film.py` |
+| `refs` | a character or place taken from 1–9 pictures (Ref2VA) | `film.py` |
+| `lipsync` | a character speaks or sings a supplied audio track | `lipsync.py` |
+
+The agent asks this first, because it decides the model download, the prompt shape and what the
+reviewer looks at. Details: `skills/comfy-film-dsh/references/modes.md`.
+
+## First run on a machine that has nothing
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\setup\install-comfy.ps1 -Modes video,long -Check
+```
+
+`-Check` reports the GPU, driver, RAM, free disk, which models are present and which are missing —
+and downloads nothing. Drop `-Check` to install: ComfyUI 0.43.0 portable, five node packs pinned to
+commits, the model set for the chosen modes, FFmpeg if the machine has none, then
+`comfy-film/assets/machine.json`. Downloads resume; existing ComfyUI installs and model files are
+detected and left alone.
+
+| Mode group | Download |
+|---|---|
+| `video` or `long` | ~39 GB |
+| `+ refs` | +20 GB (Ref2VA checkpoint) |
+| `+ lipsync` | +32 GB (Singularity checkpoint, upscaler) |
+
+Needs an NVIDIA card (RTX 20-series+, 8 GB VRAM), driver 580+, 32 GB RAM and 40–100 GB of disk.
+Full detail, flags and troubleshooting: `skills/comfy-film-dsh/references/install.md`.
 
 ## Language
 

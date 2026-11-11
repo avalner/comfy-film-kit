@@ -149,3 +149,6 @@ Write-Host ''
 Write-Host 'Next: check the machine profile, then'
 Write-Host "  & '$ComfyRoot\python_embeded\python.exe' '$ToolsRoot\comfy-film\scripts\film.py' doctor --project <project>"
 Write-Host ''
+Write-Host 'No ComfyUI or models yet? Check what is missing first (downloads nothing):'
+Write-Host "  pwsh -File '$ToolsRoot\setup\install-comfy.ps1' -Modes video,long -Check"
+Write-Host ''

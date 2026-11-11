@@ -1,12 +1,20 @@
 # New-project setup
 
+**Step 0 — is the machine able to run the chosen mode?** Run the installer check from
+`install.md` before promising anything: `setup/install-comfy.ps1 -Modes <mode> -Check`. If it reports
+`missing`, that is a conversation (modes, disk, time), not something to improvise around.
+
 Ask only for missing choices, before creating assets or queueing generation. Do not repeat saved settings when continuing. Use the user-input tool when available, otherwise a compact numbered menu. Ask at most three questions in a batch; the user may answer in free text. Put a recommended choice first, based on the stated use case. User-specified values and delegated choices override these suggestions.
 
 First batch (Russian examples; adapt to the user's language):
 
-1. **Формат видео?** Вертикальный 9:16 (Shorts/Reels); горизонтальный 16:9 (обычный фильм); квадратный 1:1. Recommend according to the user's intended platform, not always portrait. Support custom proportions/resolution in free text.
-2. **Профиль генерации?** Быстрый тест — базовое разрешение, Turbo 8; больше деталей — повышенное разрешение, Turbo 8; обычный режим — повышенное разрешение, 20 шагов без Turbo. Recommend a quick test first if settings are untested. Higher resolution/steps take longer and may not produce a better shot; do not label standard as guaranteed best.
-3. **Длительность каждой части?** 10 секунд (recommended starting point); 15 секунд. Explicitly tell the user they can enter a custom duration from 4 to 15 seconds, including fractional values such as 7.5 or 12. Do not treat the suggested options as an exhaustive list. Mention rounding only briefly when relevant. Total film length is independent of this choice.
+1. **Режим?** Короткое видео: один кадр или первый и последний; длинное видео из сцен, где каждая продолжает предыдущую; референсы (персонаж и место по картинкам); lipsync под ваше аудио. Recommend by intent: one shot or a pinned transition → `video`; a story longer than 15 seconds or a loop → `long`; a character that must not change between shots → `refs`; speech or a song → `lipsync`. Full comparison, prompts and flags: [modes.md](modes.md). Ask this one **first** — it decides the model download, the prompt shape and the review question.
+2. **Формат видео?** Вертикальный 9:16 (Shorts/Reels); горизонтальный 16:9 (обычный фильм); квадратный 1:1. Recommend according to the user's intended platform, not always portrait. Support custom proportions/resolution in free text.
+3. **Профиль генерации?** Быстрый тест — базовое разрешение, Turbo 8; больше деталей — повышенное разрешение, Turbo 8; обычный режим — повышенное разрешение, 20 шагов без Turbo. Recommend a quick test first if settings are untested. Higher resolution/steps take longer and may not produce a better shot; do not label standard as guaranteed best.
+4. **Длительность каждой части?** 10 секунд (recommended starting point); 15 секунд. Explicitly tell the user they can enter a custom duration from 4 to 15 seconds, including fractional values such as 7.5 or 12. Do not treat the suggested options as an exhaustive list. Mention rounding only briefly when relevant. Total film length is independent of this choice.
+
+Ask questions 1–4 in one batch of at most three cards only when the mode is already known; with an
+unknown mode, ask the mode alone first, then the rest.
 
 Canvas/profile mapping (all dimensions divisible by 32):
 

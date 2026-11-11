@@ -565,6 +565,22 @@ def add_segment(args, root, p):
             s["guide"]["skip"] = skip
             s["guide"]["source_frames"] = total
             s["trim_head"] = frames / float(p["config"].get("fps", 24))
+        if getattr(args, "ref2va", None):
+            sources = list(args.ref2va)
+            if not 1 <= len(sources) <= 9:
+                raise FilmError("--ref2va takes 1-9 pictures")
+            images = []
+            for i, path in enumerate(sources):
+                source = Path(path)
+                if not source.is_file():
+                    raise FilmError(f"No such reference picture: {path}")
+                images.append(copy_input(root, source, folder / f"ref2va-{i}{source.suffix.lower()}"))
+            s["ref2va"] = {"images": images, "steps": int(args.ref2va_steps),
+                           "image_size": args.ref2va_size}
+            if args.ref2va_model:
+                s["ref2va"]["model"] = args.ref2va_model
+            if args.ref2va_lora:
+                s["ref2va"]["lora"] = args.ref2va_lora
     p["segments"].append(s)
     save(root, p)
     if args.command == "import":
@@ -581,6 +597,8 @@ def add_segment(args, root, p):
         mode = "l2va"
     else:
         mode = "t2va"
+    if s.get("ref2va"):
+        mode = "ref2va+" + mode
     result = {"segment": number, "status": s["status"], "mode": mode,
               "next": "accept" if s["status"] == "review" else "run",
               "first_frame": str(root / s["first"]) if "first" in s else None,
@@ -689,7 +707,8 @@ def apply_reference_mode(root, p, s, graph, folder):
     loaders = [v for v in graph.values() if v["class_type"] == "UNETLoader"]
     if len(loaders) != 1:
         raise FilmError("Ref2VA model loader is ambiguous")
-    loaders[0]["inputs"]["unet_name"] = ref["model"]
+    if ref.get("model"):
+        loaders[0]["inputs"]["unet_name"] = ref["model"]
     model_link = next([k, 0] for k, v in graph.items() if v is loaders[0])
     if ref.get("lora"):
         graph["ref-turbo-lora"] = {"class_type": "LoraLoaderModelOnly", "inputs": {
@@ -1126,6 +1145,14 @@ def build_parser():
             a.add_argument("--guide", nargs="?", const="prev",
                            help="continue an existing clip: 'prev' (default) for the accepted previous segment, or a path")
             a.add_argument("--guide-frames", type=int, default=22)
+            a.add_argument("--ref2va", action="append", metavar="IMAGE",
+                           help="reference picture for Ref2VA (repeatable, 1-9); combines with --first/--last/--guide")
+            a.add_argument("--ref2va-model", metavar="UNET",
+                           help="diffusion model for Ref2VA (default: the project's own model)")
+            a.add_argument("--ref2va-lora", metavar="LORA", help="speed LoRA for Ref2VA, e.g. the 4-step ref2v turbo")
+            a.add_argument("--ref2va-steps", type=int, default=20)
+            a.add_argument("--ref2va-size", choices=["match", "max"], default="match",
+                           help="'max' keeps reference detail at any cost, 'match' fits them to the canvas")
             a.add_argument("--prompt-file", required=True)
             a.add_argument("--seconds", type=float)
         if name == "import":

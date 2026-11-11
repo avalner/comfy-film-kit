@@ -30,6 +30,39 @@ film wait --project PROJECT
 
 Omitting --first on a later clip automatically extracts the preceding accepted clip's last frame, upscales 2x without redrawing and uses it. Omit --last for first-frame-only continuation. Use --loop instead of --last for a final clip ending on the actual first frame of the first accepted clip. An explicit --first can start an intentional new scene. Both references are identically cover-cropped to the selected canvas: choose a canvas close to the intended composition to avoid cropping important content.
 
+## References (Ref2VA)
+
+```powershell
+film add --project PROJECT --ref2va hero.png --ref2va room.png `
+    --ref2va-model minimax_h3_ref2va_pruned_int8_convrot.safetensors `
+    --ref2va-lora minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors `
+    --ref2va-steps 6 --ref2va-size match `
+    --first BOARD.png --prompt-file PART1.txt --seconds 8
+```
+
+- `--ref2va IMAGE` is repeatable, 1–9 pictures; they are copied into the segment folder.
+- `--ref2va-model` swaps the diffusion model for this take only. Without it the project's FL2VA
+  model runs the Ref2VA graph, which it was not trained for.
+- `--ref2va-lora` + `--ref2va-steps 4–8` is the turbo path (the graph switches to `euler` and sets
+  a sigma shift); 20–25 steps without a LoRA.
+- `--ref2va-size max` preserves reference detail and is much slower; `match` fits them to the canvas.
+- The take still carries `--first`, `--last` or `--guide`: references describe *who*, keyframes fix
+  *where*. `add` reports the combination as `ref2va+i2va`, `ref2va+fl2va`, `ref2va+guide+last`.
+
+## Lipsync
+
+```powershell
+$py 'I:/Video Generation/Tools/comfy-film/scripts/lipsync.py' `
+    --audio voice.mp3 --ref face.png --prompt-file LIPSYNC.txt `
+    --project 'I:/Video Generation/Projects/<film>' [--scale 2] [--width 768 --height 1344]
+```
+
+Separate entry point, same `machine.json`. Length follows the audio (`--seconds` only cuts it
+shorter). Writes `clips/lipsync-000N.mp4` and a journal record under `.pipeline/lipsync/`.
+`--dry-run` builds and validates the graph without queueing; `--unet/--lora/--clip/--video-vae/
+--audio-vae/--upscaler` override the names resolved from ComfyUI. Single take only — the audio lock
+is per take, so it cannot be chained with `--guide`.
+
 ## Continuation (H3 `AddGuide`)
 
 **Every segment after the first is generated this way.** Boards are separate generations and their

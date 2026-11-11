@@ -14,6 +14,21 @@ This is the DSH counterpart of the Codex `comfy-film` skill. The controller is s
 
 The Codex skill keeps its `scripts/` and `assets/` as Windows junctions to that folder, so both agents run byte-identical code and there is one place to edit. Always call the scripts by the absolute path above with the Python from `assets/machine.json`. Never duplicate or fork the controller; this skill only changes the surrounding workflow.
 
+## Start of a session
+
+Two questions come before anything creative:
+
+1. **Is the machine ready?** `setup/install-comfy.ps1 -Modes <mode> -Check` — see
+   `references/install.md`. `status: ready` means go. `status: missing` means a short conversation
+   about modes, disk and time, then an approved install — never a render into a missing model, and
+   never a silent download of tens of gigabytes.
+2. **Which mode?** `video` (one clip), `long` (chained takes), `refs` (from pictures), `lipsync`
+   (under supplied audio) — see `references/modes.md`. Ask this first: it chooses the model set, the
+   prompt shape and the thing the reviewer looks at.
+
+`film.py` runs the first three modes; `lipsync.py` runs the fourth. Both read the same
+`machine.json` and talk to the same ComfyUI, so the setup is shared.
+
 ## What differs from the Codex skill
 
 | Codex instruction | DSH replacement |
@@ -307,8 +322,10 @@ Full recipes, parameters, mask commands and caveats: `references/post-tools.md`.
 
 ## References
 
+- `references/install.md` — installing ComfyUI, nodes, models and FFmpeg on a bare machine
+- `references/modes.md` — video / long / refs / lipsync: what each one is, asks for and needs
 - `references/setup.md` — new-project questions and canvas profile
-- `references/commands.md` — CLI syntax (film.py)
+- `references/commands.md` — CLI syntax (film.py, lipsync.py)
 - `references/assembly.md` — joins, continuity finishing, lighting match
 - `references/youtube.md` — publication and verification
 - `references/progress.md` — panel behaviour in DSH

@@ -72,6 +72,43 @@ $env:COMFY_FILM_LANG = 'ru'   # одну строку перед film run; па�
 меняется в URL — `?lang=ru` / `?lang=en`. Запущенная панель держит тот язык, с которым её
 стартовали, но `film run` перезапускает её, если запрошенный язык другой.
 
+## Установка на чистой машине
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File 'I:\Video Generation\Tools\setup\install-comfy.ps1' -Modes video,long -Check
+```
+
+`-Check` печатает GPU, драйвер, RAM, свободное место и список недостающих моделей — ничего не
+скачивает. Без `-Check` ставит ComfyUI 0.43.0 portable, пять паков нод (пины коммитов, git не нужен),
+модели под выбранные режимы, FFmpeg (если его нет) и пишет `comfy-film\assets\machine.json`.
+Докачка продолжается с места обрыва; уже установленное и уже скачанные модели пропускаются.
+
+| Группа режимов | Загрузка |
+|---|---|
+| `video` или `long` | ~39 ГБ |
+| `+ refs` | +20 ГБ (чекпойнт Ref2VA) |
+| `+ lipsync` | +32 ГБ (Singularity + апскейлер) |
+
+Нужны NVIDIA (RTX 20-й серии и новее, от 8 ГБ), драйвер 580+, 32 ГБ RAM, 40–100 ГБ диска.
+Каталог с URL и размерами — `setup\catalog.json`; подробности — `skills\comfy-film-dsh\references\install.md`.
+
+## Режимы
+
+| Режим | Что делает | Чем запускать |
+|---|---|---|
+| `video` | одно видео по первому кадру или по первому и последнему | `film.py` |
+| `long` | сцены, где каждая продолжает предыдущую (`--guide prev --last`) | `film.py` |
+| `refs` | персонаж и место по 1–9 картинкам (`--ref2va`) | `film.py` |
+| `lipsync` | персонаж говорит или поёт под ваше аудио | `lipsync.py` |
+
+Lipsync — отдельный вход: длина видео берётся из аудио, результат кладётся в `clips\lipsync-000N.mp4`:
+
+```powershell
+& $py 'I:\Video Generation\Tools\comfy-film\scripts\lipsync.py' `
+    --audio voice.mp3 --ref face.png --prompt-file lipsync.txt `
+    --project 'I:\Video Generation\Projects\<фильм>'
+```
+
 ## Запуск ComfyUI
 
 Сервер стартует сам при `film.py run` / `start` по `argv` из `machine.json`:

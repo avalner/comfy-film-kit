@@ -1,0 +1,748 @@
+{
+ "comfy": {
+  "version": "0.43.0",
+  "url": "https://github.com/Comfy-Org/ComfyUI/releases/download/v0.43.0/ComfyUI_windows_portable_nvidia.7z",
+  "size": 2040000000,
+  "dirname": "ComfyUI_windows_portable"
+ },
+ "min_driver": 580,
+ "nodes": [
+  {
+   "name": "ComfyUI-H3-NativeAudioLock",
+   "repo": "SveSop/ComfyUI-H3-NativeAudioLock",
+   "commit": "699e58e51b1c8e12b8c0f0dd55da603d870d20e6"
+  },
+  {
+   "name": "Comfyui_Minimax_h3_latent_Upscaler",
+   "repo": "LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler",
+   "commit": "40316cf008b2fd8663263270669eb4da23f89d2c"
+  },
+  {
+   "name": "ComfyUI-MelBandRoFormer",
+   "repo": "kijai/ComfyUI-MelBandRoFormer",
+   "commit": "92c86854e6654f4aacc97484471af95c98ea16d4"
+  },
+  {
+   "name": "ComfyUI-VideoHelperSuite",
+   "repo": "Kosinkadink/ComfyUI-VideoHelperSuite",
+   "commit": "4d907bee61e92c2e65af3bd6383a4e4d356126d1"
+  },
+  {
+   "name": "ComfyUI-KJNodes",
+   "repo": "kijai/ComfyUI-KJNodes",
+   "commit": "ab72eda7ffad6280422d71ab7d54d3fb87c0ba18"
+  }
+ ],
+ "node_checks": [
+  {
+   "pack": "ComfyUI-H3-NativeAudioLock",
+   "classes": [
+    "MiniMaxH3NativeAudioLock"
+   ],
+   "modes": [
+    "lipsync"
+   ],
+   "optional": false,
+   "why": "точный липсинг под ваше аудио"
+  },
+  {
+   "pack": "Comfyui_Minimax_h3_latent_Upscaler",
+   "classes": [
+    "MinimaxH3LatentUpscaler3D"
+   ],
+   "modes": [
+    "lipsync",
+    "action"
+   ],
+   "optional": false,
+   "why": "второй проход (увеличение кадра)"
+  },
+  {
+   "pack": "ComfyUI-MelBandRoFormer",
+   "classes": [
+    "MelBandRoFormerSampler",
+    "MelBandRoFormerModelLoader"
+   ],
+   "modes": [
+    "lipsync"
+   ],
+   "optional": true,
+   "why": "кнопка «Отделить голос» в редакторе аудио"
+  },
+  {
+   "pack": "ComfyUI-VideoHelperSuite",
+   "classes": [
+    "VHS_LoadVideo"
+   ],
+   "modes": [
+    "refs",
+    "swap"
+   ],
+   "optional": false,
+   "why": "видео, в котором меняем персонажа"
+  },
+  {
+   "pack": "ComfyUI-KJNodes",
+   "classes": [
+    "MiniMaxChunkFeedForward",
+    "MiniMaxLowVRAMAttention"
+   ],
+   "modes": [
+    "long"
+   ],
+   "optional": false,
+   "why": "экономия видеопамяти в длинном видео"
+  }
+ ],
+ "modes": {
+  "video": "Image-to-Video",
+  "lipsync": "Lipsync",
+  "refs": "Референсы",
+  "actor": "Актёрская игра",
+  "swap": "Замена персонажа",
+  "action": "Экшн-сцены",
+  "krea": "Изображение по тексту",
+  "kreareal": "Изображение: реализм",
+  "qwen": "Правка изображения",
+  "flux": "Правка изображения: FLUX.2 (можно в коммерцию)",
+  "upscale": "Увеличение видео и изображений",
+  "relayvsr": "Быстрое увеличение видео (RelayVSR)",
+  "long": "Длинное видео"
+ },
+ "mode_roles": {
+  "video": [
+   "film_unet",
+   "text_encoder",
+   "video_vae",
+   "audio_vae",
+   "film_turbo_lora"
+  ],
+  "lipsync": [
+   "lipsync_unet",
+   "text_encoder",
+   "video_vae",
+   "audio_vae",
+   "ref2v_turbo_lora",
+   "upscaler"
+  ],
+  "refs": [
+   "ref2va_unet",
+   "text_encoder",
+   "video_vae",
+   "audio_vae",
+   "ref2v_turbo_lora"
+  ],
+  "actor": [
+   "lipsync_unet",
+   "text_encoder",
+   "video_vae",
+   "audio_vae",
+   "ref2v_turbo_lora"
+  ],
+  "action": [
+   "action_unet",
+   "text_encoder",
+   "video_vae",
+   "audio_vae",
+   "upscaler"
+  ],
+  "swap": [
+   "lipsync_unet",
+   "text_encoder",
+   "video_vae",
+   "audio_vae",
+   "ref2v_turbo_lora",
+   "swap_lora"
+  ],
+  "long": [
+   "film_unet",
+   "text_encoder",
+   "video_vae",
+   "audio_vae",
+   "film_turbo_lora"
+  ],
+  "krea": [
+   "krea_unet",
+   "krea_clip",
+   "krea_vae"
+  ],
+  "kreareal": [
+   "kreareal_unet",
+   "kreareal_lora",
+   "krea_clip",
+   "krea_vae"
+  ],
+  "qwen": [
+   "qwen_unet",
+   "qwen_clip",
+   "qwen_vae"
+  ],
+  "flux": [
+   "flux_unet",
+   "flux_clip",
+   "flux_vae"
+  ],
+  "upscale": [
+   "seedvr_unet",
+   "seedvr_vae"
+  ],
+  "relayvsr": [
+   "relayvsr_unet",
+   "relayvsr_vae"
+  ]
+ },
+ "mode_optional": {
+  "video": [],
+  "lipsync": [],
+  "refs": [],
+  "actor": [
+   "realism_lora"
+  ],
+  "swap": [
+   "pika_lora",
+   "realism_lora",
+   "motion_repair_lora"
+  ],
+  "action": [
+   "speed_slider_lora",
+   "action_upscaler"
+  ],
+  "long": []
+ },
+ "profiles": {
+  "lite": {
+   "title": "Лёгкий",
+   "lipsync_unet": "lite",
+   "action_unet": "lite",
+   "about": "Самые лёгкие версии: меньше качать и меньше памяти, качество немного ниже"
+  },
+  "standard": {
+   "title": "Стандарт",
+   "lipsync_unet": "v2",
+   "action_unet": "int8",
+   "about": "Облегчённая (pruned) Singularity v2: ~20 ГБ вместо 34, качество почти как у полной. Подходит для видеокарт 12–16 ГБ"
+  },
+  "max": {
+   "title": "Максимум",
+   "lipsync_unet": "full",
+   "action_unet": "int8",
+   "about": "Полные модели, как в исходных workflow"
+  }
+ },
+ "defaults": {
+  "fast_unet": "int8",
+  "lipsync_unet": "full",
+  "text_encoder": "nvfp4",
+  "video_vae": "int8",
+  "audio_vae": "fp32",
+  "ref2v_turbo_lora": "bf16",
+  "upscaler": "bf16",
+  "preview": "taeh3",
+  "action_unet": "int8",
+  "speed_slider_lora": "v1.1",
+  "action_upscaler": "lms",
+  "vocal_model": "fp16",
+  "realism_lora": "v1",
+  "motion_repair_lora": "v1",
+  "pika_lora": "hd8",
+  "swap_lora": "v15",
+  "sla_lora": "bf16",
+  "draft_lora": "bf16",
+  "krea_unet": "int8",
+  "krea_clip": "fp8",
+  "krea_vae": "bf16",
+  "kreareal_unet": "fp8",
+  "kreareal_lora": "v2",
+  "qwen_unet": "int8",
+  "qwen_clip": "int8",
+  "qwen_vae": "bf16",
+  "flux_unet": "fp8",
+  "flux_clip": "bf16",
+  "flux_vae": "bf16",
+  "seedvr_unet": "int8",
+  "seedvr_vae": "fp16",
+  "relayvsr_unet": "x2",
+  "relayvsr_vae": "x2"
+ },
+ "aliases": {
+  "minimax_h3_latent_upscaler_3d_bf16.safetensors": [
+   "minimax_h3_latent_upscaler_3d_conv_v1_bf16.safetensors"
+  ]
+ },
+ "roles": {
+  "fast_unet": {
+   "title": "Основная модель — Image-to-Video (FastH3)",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/FastVideo/FastVideo-FastH3-Comfy/resolve/main/diffusion_models/fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors",
+     "size": 22130000000,
+     "category": "diffusion_models",
+     "file": "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors",
+     "name": "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors"
+    },
+    "nvfp4": {
+     "url": "https://huggingface.co/FastVideo/FastVideo-FastH3-8-Step-V2-NVFP4-Comfy/resolve/main/diffusion_models/fastvideo_fasth3_8step_v2_pruned_nvfp4.safetensors",
+     "size": 13610000000,
+     "category": "diffusion_models",
+     "file": "fastvideo_fasth3_8step_v2_pruned_nvfp4.safetensors",
+     "name": "fastvideo_fasth3_8step_v2_pruned_nvfp4.safetensors"
+    }
+   }
+  },
+  "lipsync_unet": {
+   "title": "Основная модель — Lipsync (Singularity)",
+   "variants": {
+    "full": {
+     "url": "https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity/resolve/main/Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
+     "size": 34000000000,
+     "category": "diffusion_models",
+     "file": "Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
+     "name": "Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors"
+    },
+    "pruned": {
+     "url": "https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity/resolve/main/Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+     "size": 20970000000,
+     "category": "diffusion_models",
+     "file": "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+     "name": "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors"
+    },
+    "lite": {
+     "url": "https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity/resolve/main/Minimax-h3_Singularity_ref2va_v1.3_Pruned_w4a8.safetensors",
+     "size": 11770000000,
+     "category": "diffusion_models",
+     "file": "Minimax-h3_Singularity_ref2va_v1.3_Pruned_w4a8.safetensors",
+     "name": "Minimax-h3_Singularity_ref2va_v1.3_Pruned_w4a8.safetensors"
+    },
+    "v2": {
+     "url": "https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity/resolve/main/Minimax-h3_Singularity_ref2va_v2_pruned_int8.safetensors",
+     "size": 20970000000,
+     "category": "diffusion_models",
+     "file": "Minimax-h3_Singularity_ref2va_v2_pruned_int8.safetensors",
+     "name": "Minimax-h3_Singularity_ref2va_v2_pruned_int8.safetensors"
+    },
+    "v2_full": {
+     "url": "https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity/resolve/main/Minimax-h3_Singularity_ref2va_v2_int8.safetensors",
+     "size": 34000000000,
+     "category": "diffusion_models",
+     "file": "Minimax-h3_Singularity_ref2va_v2_int8.safetensors",
+     "name": "Minimax-h3_Singularity_ref2va_v2_int8.safetensors"
+    }
+   }
+  },
+  "text_encoder": {
+   "title": "Текстовый энкодер (Qwen3-VL 32B)",
+   "variants": {
+    "nvfp4": {
+     "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+     "size": 15690000000,
+     "category": "text_encoders",
+     "file": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+     "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+    }
+   }
+  },
+  "video_vae": {
+   "title": "Видео VAE",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
+     "size": 2810000000,
+     "category": "vae",
+     "file": "minimax_h3_video_vae_int8_convrot.safetensors",
+     "name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    }
+   }
+  },
+  "audio_vae": {
+   "title": "Аудио VAE",
+   "variants": {
+    "fp32": {
+     "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+     "size": 610000000,
+     "category": "vae",
+     "file": "minimax_h3_audio_vae_fp32.safetensors",
+     "name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+   }
+  },
+  "ref2v_turbo_lora": {
+   "title": "LoRA ускорения для Lipsync",
+   "variants": {
+    "bf16": {
+     "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+     "size": 1960000000,
+     "category": "loras",
+     "file": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+     "name": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"
+    }
+   }
+  },
+  "upscaler": {
+   "title": "Апскейлер второго прохода",
+   "variants": {
+    "bf16": {
+     "url": "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_bf16.safetensors",
+     "size": 690000000,
+     "category": "latent_upscale_models",
+     "file": "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+     "name": "minimax_h3_latent_upscaler_3d_bf16.safetensors"
+    }
+   }
+  },
+  "sla_lora": {
+   "title": "LoRA Turbo-SLA (быстрое ускорение для Image-to-Video)",
+   "variants": {
+    "bf16": {
+     "url": "https://huggingface.co/lightx2v/Minimax-h3-Turbo-SLA/resolve/main/minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors",
+     "size": 1960000000,
+     "category": "loras",
+     "file": "minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors",
+     "name": "minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors"
+    }
+   }
+  },
+  "preview": {
+   "title": "Декодер живого превью",
+   "variants": {
+    "taeh3": {
+     "url": "https://huggingface.co/Alissonerdx/Minimax-H3-ComfyUI/resolve/main/vae_approx/taeh3.safetensors",
+     "size": 20000000,
+     "category": "vae_approx",
+     "file": "taeh3.safetensors",
+     "name": "taeh3.safetensors"
+    }
+   }
+  },
+  "vocal_model": {
+   "title": "Отделение голоса от музыки (MelBand RoFormer)",
+   "variants": {
+    "fp16": {
+     "url": "https://huggingface.co/Kijai/MelBandRoFormer_comfy/resolve/main/MelBandRoformer_fp16.safetensors",
+     "size": 456000000,
+     "category": "diffusion_models",
+     "file": "MelBandRoformer_fp16.safetensors",
+     "name": "MelBandRoformer_fp16.safetensors"
+    }
+   }
+  },
+  "action_unet": {
+   "title": "Основная модель — Экшн-сцены (Hybrid FL2VA/Ref2VA)",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+     "size": 20970000000,
+     "category": "diffusion_models",
+     "file": "minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+     "name": "minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors"
+    },
+    "lite": {
+     "url": "https://huggingface.co/binglingzhimeng/minimax_h3_hybrid_fl2va_ref2va_b25-49_w6a8/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49_w6a8.safetensors",
+     "size": 15980000000,
+     "category": "diffusion_models",
+     "file": "minimax_h3_hybrid_fl2va_ref2va_b25-49_w6a8.safetensors",
+     "name": "minimax_h3_hybrid_fl2va_ref2va_b25-49_w6a8.safetensors"
+    }
+   }
+  },
+  "speed_slider_lora": {
+   "title": "LoRA Speed Slider (экшн)",
+   "variants": {
+    "v1.1": {
+     "url": "https://huggingface.co/RunningHubAI/rh-h3-speed-slider-1.1-lora/resolve/main/H3_speed_slider_1.1.safetensors",
+     "size": 10000000,
+     "category": "loras",
+     "file": "H3_speed_slider_1.1.safetensors",
+     "name": "H3_speed_slider_1.1.safetensors"
+    }
+   }
+  },
+  "action_upscaler": {
+   "title": "Апскейлер SelfLift (экшн, точный режим)",
+   "variants": {
+    "lms": {
+     "url": "https://huggingface.co/Alissonerdx/Minimax-H3-ComfyUI/resolve/main/latent_upscaler/h3_upscaler_lms_v0.1.safetensors",
+     "size": 690000000,
+     "category": "latent_upscale_models",
+     "file": "h3_upscaler_lms_v0.1.safetensors",
+     "name": "h3_upscaler_lms_v0.1.safetensors"
+    }
+   }
+  },
+  "realism_lora": {
+   "title": "LoRA «Реализм людей» (по желанию)",
+   "variants": {
+    "v1": {
+     "url": "https://huggingface.co/fal/MiniMax-H3-Realism-People-LoRA/resolve/main/h3-realism-people-t2v-i2v-r2v.safetensors",
+     "size": 130000000,
+     "category": "loras",
+     "file": "h3-realism-people-t2v-i2v-r2v.safetensors",
+     "name": "h3-realism-people-t2v-i2v-r2v.safetensors"
+    }
+   }
+  },
+  "motion_repair_lora": {
+   "title": "LoRA «Исправление движения» (по желанию)",
+   "variants": {
+    "v1": {
+     "url": "https://huggingface.co/JOKER141/MiniMax-H3-General-Motion-Continuity-Repair/resolve/main/Motion_Repair.safetensors",
+     "size": 160000000,
+     "category": "loras",
+     "file": "Motion_Repair.safetensors",
+     "name": "Motion_Repair.safetensors"
+    }
+   }
+  },
+  "swap_lora": {
+   "title": "LoRA «Замена персонажа» (akatz-ai)",
+   "variants": {
+    "v15": {
+     "url": "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA/resolve/main/h3_character_swap_v1.5.safetensors",
+     "size": 160000000,
+     "category": "loras",
+     "file": "h3_character_swap_v1.5.safetensors",
+     "name": "h3_character_swap_v1.5.safetensors"
+    }
+   }
+  },
+  "pika_lora": {
+   "title": "LoRA Pika H3 Flex Turbo (ускорение для Референсов, хороший звук)",
+   "variants": {
+    "hd8": {
+     "url": "https://huggingface.co/Pika-Labs/Pika-H3-Flex-Turbo-LoRA/resolve/main/pika_h3_flex_turbo_8step_hd_ref2va.safetensors",
+     "size": 3910000000,
+     "category": "loras",
+     "file": "pika_h3_flex_turbo_8step_hd_ref2va.safetensors",
+     "name": "pika_h3_flex_turbo_8step_hd_ref2va.safetensors"
+    }
+   }
+  },
+  "draft_lora": {
+   "title": "LoRA DMAD — быстрый черновик Видеостудии (4 шага вместо 8)",
+   "variants": {
+    "bf16": {
+     "url": "https://huggingface.co/Kijai/MiniMax-H3-experimental/resolve/main/loras/minimax_h3_DMAD_4step_full_lora_avg_rank_39_bf16.safetensors",
+     "size": 366647000,
+     "category": "loras",
+     "file": "minimax_h3_DMAD_4step_full_lora_avg_rank_39_bf16.safetensors",
+     "name": "minimax_h3_DMAD_4step_full_lora_avg_rank_39_bf16.safetensors"
+    }
+   }
+  },
+  "seedvr_unet": {
+   "title": "Увеличение видео и изображений — модель SeedVR2 (3B)",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/Comfy-Org/SeedVR2/resolve/main/diffusion_models/seedvr2_3b_int8_convrot.safetensors",
+     "size": 3460000000,
+     "category": "diffusion_models",
+     "file": "seedvr2_3b_int8_convrot.safetensors",
+     "name": "Images\\seedvr2_3b_int8_convrot.safetensors"
+    }
+   }
+  },
+  "seedvr_vae": {
+   "title": "Увеличение видео и изображений — VAE SeedVR2",
+   "variants": {
+    "fp16": {
+     "url": "https://huggingface.co/Comfy-Org/SeedVR2/resolve/main/vae/seedvr2_ema_vae_fp16.safetensors",
+     "size": 500000000,
+     "category": "vae",
+     "file": "seedvr2_ema_vae_fp16.safetensors",
+     "name": "Images\\seedvr2_ema_vae_fp16.safetensors"
+    }
+   }
+  },
+  "relayvsr_unet": {
+   "title": "Быстрое увеличение видео — модель RelayVSR ×2",
+   "variants": {
+    "x2": {
+     "url": "https://huggingface.co/Comfy-Org/RelayVSR/resolve/main/diffusion_models/relayvsr_x2_lightx2v_int8_convrot.safetensors",
+     "size": 5160000000,
+     "category": "diffusion_models",
+     "file": "relayvsr_x2_lightx2v_int8_convrot.safetensors",
+     "name": "Images\\relayvsr_x2_lightx2v_int8_convrot.safetensors"
+    }
+   }
+  },
+  "relayvsr_vae": {
+   "title": "Быстрое увеличение видео — VAE RelayVSR ×2",
+   "variants": {
+    "x2": {
+     "url": "https://huggingface.co/Comfy-Org/RelayVSR/resolve/main/vae/relayvsr_flash_vae_x2_fp32.safetensors",
+     "size": 130000000,
+     "category": "vae",
+     "file": "relayvsr_flash_vae_x2_fp32.safetensors",
+     "name": "Images\\relayvsr_flash_vae_x2_fp32.safetensors"
+    }
+   }
+  },
+  "krea_unet": {
+   "title": "Основная модель — Изображение по тексту (Krea 2)",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_int8_convrot.safetensors",
+     "size": 13490000000,
+     "category": "diffusion_models",
+     "file": "krea2_turbo_int8_convrot.safetensors",
+     "name": "Images\\krea2_turbo_int8_convrot.safetensors"
+    }
+   }
+  },
+  "krea_clip": {
+   "title": "Текстовый энкодер Krea 2 (Qwen3-VL 4B)",
+   "variants": {
+    "fp8": {
+     "url": "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/text_encoders/qwen3vl_4b_fp8_scaled.safetensors",
+     "size": 5240000000,
+     "category": "text_encoders",
+     "file": "qwen3vl_4b_fp8_scaled.safetensors",
+     "name": "Images\\qwen3vl_4b_fp8_scaled.safetensors"
+    }
+   }
+  },
+  "krea_vae": {
+   "title": "VAE для Krea 2",
+   "variants": {
+    "bf16": {
+     "url": "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/vae/qwen_image_vae.safetensors",
+     "size": 250000000,
+     "category": "vae",
+     "file": "qwen_image_vae.safetensors",
+     "name": "Images\\qwen_image_vae.safetensors"
+    }
+   }
+  },
+  "kreareal_unet": {
+   "title": "Основная модель — Изображение: реализм (RedCraft, Krea 2)",
+   "variants": {
+    "fp8": {
+     "url": "https://huggingface.co/Kerstal/krea-2_model/resolve/main/redcraftKREA2RedMix_krea2Edition.safetensors",
+     "size": 13140000000,
+     "category": "diffusion_models",
+     "file": "redcraftKREA2RedMix_krea2Edition.safetensors",
+     "name": "Images\\redcraftKREA2RedMix_krea2Edition.safetensors"
+    }
+   }
+  },
+  "kreareal_lora": {
+   "title": "LoRA Realism Engine для Krea 2 (реализм)",
+   "variants": {
+    "v2": {
+     "url": "https://huggingface.co/uzumix/realism_engine_krea2_v2/resolve/main/realism_engine_krea2_v2.safetensors",
+     "size": 1560000000,
+     "category": "loras",
+     "file": "realism_engine_krea2_v2.safetensors",
+     "name": "Images\\realism_engine_krea2_v2.safetensors"
+    }
+   }
+  },
+  "qwen_unet": {
+   "title": "Основная модель — Правка изображения (Qwen Image 2.1)",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors",
+     "size": 7260000000,
+     "category": "diffusion_models",
+     "file": "qwen_image_2.1_int8_convrot.safetensors",
+     "name": "Images\\qwen_image_2.1_int8_convrot.safetensors"
+    }
+   }
+  },
+  "qwen_clip": {
+   "title": "Текстовый энкодер Qwen (Qwen3-VL 8B)",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors",
+     "size": 9350000000,
+     "category": "text_encoders",
+     "file": "qwen3vl_8b_int8_convrot.safetensors",
+     "name": "Images\\qwen3vl_8b_int8_convrot.safetensors"
+    }
+   }
+  },
+  "qwen_vae": {
+   "title": "VAE для Qwen Image 2.1",
+   "variants": {
+    "bf16": {
+     "url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/vae/qwen_image_2.1_vae_bf16.safetensors",
+     "size": 680000000,
+     "category": "vae",
+     "file": "qwen_image_2.1_vae_bf16.safetensors",
+     "name": "Images\\qwen_image_2.1_vae_bf16.safetensors"
+    }
+   }
+  },
+  "flux_unet": {
+   "title": "Основная модель — Правка изображения для коммерции (FLUX.2 klein 4B)",
+   "variants": {
+    "fp8": {
+     "url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4b-fp8/resolve/main/flux-2-klein-4b-fp8.safetensors",
+     "size": 4070000000,
+     "category": "diffusion_models",
+     "file": "flux-2-klein-4b-fp8.safetensors",
+     "name": "Images\\flux-2-klein-4b-fp8.safetensors"
+    }
+   }
+  },
+  "flux_clip": {
+   "title": "Текстовый энкодер FLUX.2 klein (Qwen3 4B)",
+   "variants": {
+    "bf16": {
+     "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors",
+     "size": 8039999999,
+     "category": "text_encoders",
+     "file": "qwen_3_4b.safetensors",
+     "name": "Images\\qwen_3_4b.safetensors"
+    }
+   }
+  },
+  "flux_vae": {
+   "title": "VAE для FLUX.2",
+   "variants": {
+    "bf16": {
+     "url": "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors",
+     "size": 340000000,
+     "category": "vae",
+     "file": "flux2-vae.safetensors",
+     "name": "Images\\flux2-vae.safetensors"
+    }
+   }
+  },
+  "film_unet": {
+   "title": "MiniMax H3 FL2VA — the film controller",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+     "size": 20970379616,
+     "category": "diffusion_models",
+     "file": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+     "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+    }
+   }
+  },
+  "film_turbo_lora": {
+   "title": "MiniMax H3 FL2V Turbo 8-step LoRA",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+     "size": 1956193000,
+     "category": "loras",
+     "file": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+     "name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors"
+    }
+   }
+  },
+  "ref2va_unet": {
+   "title": "MiniMax H3 Ref2VA — references mode",
+   "variants": {
+    "int8": {
+     "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+     "size": 20970379616,
+     "category": "diffusion_models",
+     "file": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+     "name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+    }
+   }
+  }
+ }
+}
