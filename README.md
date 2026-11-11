@@ -54,9 +54,13 @@ Optional ComfyUI node packs the post-production recipes rely on: `ComfyUI-VideoH
 ## Install
 
 ```powershell
-git clone https://github.com/avalner/comfy-film-kit.git "I:\Video Generation\Tools"
-powershell -ExecutionPolicy Bypass -File "I:\Video Generation\Tools\install.ps1"
+git clone https://github.com/avalner/comfy-film-kit.git C:\Tools\comfy-film-kit
+powershell -ExecutionPolicy Bypass -File C:\Tools\comfy-film-kit\install.ps1
 ```
+
+Clone it wherever you like: `film.py` takes absolute paths on the command line and does not care
+where the checkout lives. The skills do — they are written against the canonical
+`I:\Video Generation\Tools`, so a checkout elsewhere needs the one-time fix in **Porting** below.
 
 `install.ps1` does three things:
 
@@ -144,15 +148,19 @@ why every decision that matters is written into `film.json` or `brief.md`.
 ## Controller cheat sheet
 
 ```powershell
-$py = 'I:\Video Generation\ComfyUI_windows_portable\python_embeded\python.exe'
-$film = 'I:\Video Generation\Tools\comfy-film\scripts\film.py'
+$Tools = 'C:\Tools\comfy-film-kit'      # this checkout
+$py    = (Get-Content "$Tools\comfy-film\assets\machine.json" -Raw | ConvertFrom-Json).python
+$film  = "$Tools\comfy-film\scripts\film.py"
 
-& $py $film status  --project PROJECT
-& $py $film add     --project PROJECT --first START.png --last END.png --prompt-file PART1.txt --seconds 10
-& $py $film run     --project PROJECT
-& $py $film wait    --project PROJECT
-& $py $film accept  --project PROJECT --segment 1
+& $py $film status  --project <project folder>
+& $py $film add     --project <project folder> --first START.png --last END.png --prompt-file PART1.txt --seconds 10
+& $py $film run     --project <project folder>
+& $py $film wait    --project <project folder>
+& $py $film accept  --project <project folder> --segment 1
 ```
+
+`$Tools` is the only path you set by hand. The interpreter comes from `machine.json`, which is what
+`install.ps1` or `setup/install-comfy.ps1` writes — there is no second place to keep it in sync.
 
 `film init`, `preview`, `add`, `run`, `wait`, `status`, `review`, `accept`, `reject`,
 `trim`, `join`, `stitch`, `extract`, `loras`, `recover`, `doctor`, `finalize`.
