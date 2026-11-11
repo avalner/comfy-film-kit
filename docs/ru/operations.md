@@ -58,6 +58,20 @@ powershell -ExecutionPolicy Bypass -File 'I:\Video Generation\Tools\install.ps1'
 4. `machine.json` и `youtube.json` — локальные файлы, в git их нет. Шаблоны:
    `machine.example.json`, `youtube.example.json`.
 
+## Язык панелей
+
+Все прогресс-панели и страница просмотра по умолчанию английские. Если разговор с пользователем
+идёт по-русски, панель должна быть русской:
+
+```powershell
+$env:COMFY_FILM_LANG = 'ru'   # одну строку перед film run; панель наследует переменную
+```
+
+Приоритет: `--lang` → `COMFY_FILM_LANG` → английский. Ключ `--lang ru` принимают `progress.py`,
+`upscale_progress.py` и `image-progress.py`; у `serve-media.py` и у уже открытой панели язык
+меняется в URL — `?lang=ru` / `?lang=en`. Запущенная панель держит тот язык, с которым её
+стартовали, но `film run` перезапускает её, если запрошенный язык другой.
+
 ## Запуск ComfyUI
 
 Сервер стартует сам при `film.py run` / `start` по `argv` из `machine.json`:

@@ -157,6 +157,20 @@ Every command prints a compact JSON object and fails with a non-zero exit code.
 
 Full syntax: `skills/comfy-film-dsh/references/commands.md`.
 
+## Language
+
+Every progress panel and the media watch page are **English by default**. When the agent talks to
+the user in Russian, the page follows the conversation:
+
+```powershell
+$env:COMFY_FILM_LANG = 'ru'     # one line before `film run`; the panel inherits it
+```
+
+Precedence is `--lang` > `COMFY_FILM_LANG` > English. `progress.py`, `upscale_progress.py` and
+`image-progress.py` take `--lang ru`; a running panel and the `serve-media.py` watch page switch with
+`?lang=ru` / `?lang=en` in the URL. A panel started in one language is restarted by `film run` when
+the other one is requested, so the page never contradicts the message next to it.
+
 ## The skills
 
 | Skill | Load it when |

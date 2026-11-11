@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import shutil
+import signal
 import sys
 import time
 import urllib.request
@@ -12,18 +13,33 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = Path(__file__).resolve().parent
 
+# The panel is English unless the conversation is Russian. Precedence:
+# explicit --lang, then COMFY_FILM_LANG in the environment, then English.
+LANG_ENV = "COMFY_FILM_LANG"
+LANGS = ("en", "ru")
+
+
+def resolve_lang(value=None):
+    """Normalise a language tag to a supported panel language (default English)."""
+    for candidate in (value, os.environ.get(LANG_ENV)):
+        if candidate:
+            tag = str(candidate).strip().lower().replace("_", "-")[:2]
+            if tag in LANGS:
+                return tag
+    return "en"
+
 
 def read(path):
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
-def snapshot(root):
+def snapshot(root, lang="en"):
     film = read(root / "film.json")
     segments = film.get("segments", [])
     s = next((s for s in segments if s["status"] in ("running", "submitting")), segments[-1] if segments else {})
     attempt = (s.get("attempts") or [{}])[-1]
     result = dict(title=film["title"], segment=s.get("number"), status=s.get("status", "draft"),
-                  server=film["config"]["server"], generator=film["bindings"]["generator"],
+                  lang=lang, server=film["config"]["server"], generator=film["bindings"]["generator"],
                   prompt=attempt.get("prompt_id"), client=attempt.get("client_id"), labels={})
     graph_path = root / ".pipeline" / "workflow-api.json"
     if graph_path.exists():
@@ -47,11 +63,11 @@ def snapshot(root):
             elif status.get("completed"):
                 result["status"] = "review"
         except Exception:
-            result["connection_warning"] = "Нет связи с ComfyUI"
+            result["connection_warning"] = True  # the page renders the localised text
     return result
 
 
-def serve(root):
+def serve(root, lang="en"):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -62,10 +78,12 @@ def serve(root):
                 if route == "/health":
                     data, mime = json.dumps({"project": str(root)}).encode(), "application/json"
                 elif route == "/api":
-                    data, mime = json.dumps(snapshot(root), ensure_ascii=False).encode(), "application/json"
+                    data, mime = json.dumps(snapshot(root, lang), ensure_ascii=False).encode(), "application/json"
                 elif route in ("/", "/progress.js"):
                     name = "progress.html" if route == "/" else "progress.js"
                     data = (HERE / name).read_bytes()
+                    if route == "/":
+                        data = data.replace(b"__LANG__", lang.encode("ascii", "ignore"))
                     mime = "text/html" if route == "/" else "text/javascript"
                 else:
                     self.send_error(404)
@@ -87,7 +105,7 @@ def serve(root):
         subprocess.Popen([node, str(HERE / "progress-worker.cjs"), str(root), str(os.getpid())],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
-    info = {"url": f"http://127.0.0.1:{server.server_port}", "pid": os.getpid()}
+    info = {"url": f"http://127.0.0.1:{server.server_port}", "pid": os.getpid(), "lang": lang}
     path = root / ".pipeline" / "progress-server.json"
     path.parent.mkdir(exist_ok=True)
     tmp = path.with_suffix(".tmp")
@@ -96,7 +114,8 @@ def serve(root):
     server.serve_forever()
 
 
-def launch(root):
+def launch(root, lang=None):
+    lang = resolve_lang(lang)
     record = root / ".pipeline" / "progress-server.json"
 
     def existing():
@@ -115,9 +134,18 @@ def launch(root):
         return None
 
     if info := existing():
-        return info
+        if info.get("lang") == lang:
+            return info
+        # A panel left over from a conversation in another language: it holds no state,
+        # so restart it rather than showing the wrong language next to a render.
+        try:
+            os.kill(info["pid"], signal.SIGTERM)
+            time.sleep(0.4)
+        except Exception:
+            pass
     flags = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
-    subprocess.Popen([sys.executable, str(HERE / "progress.py"), "--project", str(root), "--serve"],
+    subprocess.Popen([sys.executable, str(HERE / "progress.py"), "--project", str(root), "--serve",
+                      "--lang", lang],
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      creationflags=flags, close_fds=True)
     for _ in range(40):
@@ -131,10 +159,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--project", required=True)
     parser.add_argument("--serve", action="store_true")
+    parser.add_argument("--lang", choices=LANGS, default=None,
+                        help=f"panel language (default: ${LANG_ENV} or en)")
     args = parser.parse_args()
     root = Path(args.project).resolve()
     read(root / "film.json")
+    lang = resolve_lang(args.lang)
     if args.serve:
-        serve(root)
+        serve(root, lang)
     else:
-        print(json.dumps(launch(root)))
+        print(json.dumps(launch(root, lang)))

@@ -6,7 +6,10 @@ parses the SeedVR2 log the helper already writes, and reports the chunk/phase/ba
 
 It never starts, cancels or modifies an upscale; it only reads files.
 
-    python upscale_progress.py --project PROJECT --serve
+The panel is English by default; pass --lang ru (or set COMFY_FILM_LANG=ru) when the
+conversation with the user is Russian.
+
+    python upscale_progress.py --project PROJECT --serve [--lang ru]
     python upscale_progress.py --project PROJECT          # one-shot JSON snapshot
 """
 import argparse
@@ -21,13 +24,37 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
+# English unless the conversation is Russian. Precedence: --lang, COMFY_FILM_LANG, en.
+LANG_ENV = "COMFY_FILM_LANG"
+LANGS = ("en", "ru")
+
+
+def resolve_lang(value=None):
+    """Normalise a language tag to a supported panel language (default English)."""
+    for candidate in (value, os.environ.get(LANG_ENV)):
+        if candidate:
+            tag = str(candidate).strip().lower().replace("_", "-")[:2]
+            if tag in LANGS:
+                return tag
+    return "en"
+
+
 # Measured share of a chunk's wall time, used when pacing the sub-chunk estimate.
 PHASE_NAMES = {
-    1: "VAE-кодирование",
-    2: "DiT-апскейл",
-    3: "VAE-декодирование",
-    4: "Пост-обработка",
+    "en": {
+        1: "VAE encoding",
+        2: "DiT upscale",
+        3: "VAE decoding",
+        4: "Post-processing",
+    },
+    "ru": {
+        1: "VAE-кодирование",
+        2: "DiT-апскейл",
+        3: "VAE-декодирование",
+        4: "Пост-обработка",
+    },
 }
+FINISHED = {"en": "Done", "ru": "Готово"}
 # Relative weights observed in production (encode, upscale, decode, post).
 PHASE_WEIGHTS = {1: 60, 2: 60, 3: 130, 4: 13}
 CHUNK_SECONDS = sum(PHASE_WEIGHTS.values())
@@ -47,8 +74,9 @@ def newest_workdir(root):
     return max(dirs, key=lambda d: d.stat().st_mtime) if dirs else None
 
 
-def parse_log(path, out_path):
+def parse_log(path, out_path, lang="en"):
     """Return the upscale position. Frames on disk are the authoritative done-count."""
+    phases = PHASE_NAMES.get(lang, PHASE_NAMES["en"])
     data = {
         "active": True,
         "chunk": None,
@@ -71,7 +99,7 @@ def parse_log(path, out_path):
             data["chunk"], data["chunks"] = int(m.group(1)), int(m.group(2))
         if m := RE_PHASE.search(line):
             data["phase"] = int(m.group(1))
-            data["phase_name"] = PHASE_NAMES.get(data["phase"], f"Фаза {data['phase']}")
+            data["phase_name"] = phases.get(data["phase"], f"Phase {data['phase']}")
             data["batch"] = data["batches"] = None
         if m := RE_BATCH.search(line):
             data["batch"], data["batches"] = int(m.group(2)), int(m.group(3))
@@ -102,9 +130,9 @@ def probe_frames(src):
         return None
 
 
-def snapshot(root):
+def snapshot(root, lang="en"):
     work = newest_workdir(root)
-    result = {"project": str(root), "kind": "upscale", "work": str(work) if work else None}
+    result = {"project": str(root), "kind": "upscale", "lang": lang, "work": str(work) if work else None}
 
     # The helper removes its work directory on success, so a missing log must not be read as
     # "nothing happened": fall back to the delivered file pair and report completion.
@@ -125,16 +153,16 @@ def snapshot(root):
                 percent=100.0,
                 frames_done=total,
                 frames_total=total,
-                phase_name="Готово",
+                phase_name=FINISHED.get(lang, FINISHED["en"]),
                 source=str(source),
                 output=str(out_path),
             )
         else:
-            result.update(active=False, exists=False, message="Апскейл не найден")
+            result.update(active=False, exists=False)
         return result
     log = work / "seedvr2.log"
 
-    data = parse_log(log, out_path)
+    data = parse_log(log, out_path, lang)
     total = probe_frames(source) if source else None
 
     # Percentage: whole chunks plus the fraction of the running chunk.
@@ -172,7 +200,7 @@ def snapshot(root):
     return result
 
 
-def serve(root):
+def serve(root, lang="en"):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -183,10 +211,12 @@ def serve(root):
                 if route == "/health":
                     data, mime = json.dumps({"project": str(root)}).encode(), "application/json"
                 elif route == "/api":
-                    data, mime = json.dumps(snapshot(root), ensure_ascii=False).encode(), "application/json"
+                    data, mime = json.dumps(snapshot(root, lang), ensure_ascii=False).encode(), "application/json"
                 elif route in ("/", "/upscale-progress.js"):
                     name = "upscale-progress.html" if route == "/" else "upscale-progress.js"
                     data = (HERE / name).read_bytes()
+                    if route == "/":
+                        data = data.replace(b"__LANG__", lang.encode("ascii", "ignore"))
                     mime = "text/html" if route == "/" else "text/javascript"
                 else:
                     self.send_error(404)
@@ -216,9 +246,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--project", required=True)
     ap.add_argument("--serve", action="store_true")
+    ap.add_argument("--lang", choices=LANGS, default=None,
+                    help=f"panel language (default: ${LANG_ENV} or en)")
     a = ap.parse_args()
     root = Path(a.project).resolve()
+    lang = resolve_lang(a.lang)
     if a.serve:
-        serve(root)
+        serve(root, lang)
     else:
-        print(json.dumps(snapshot(root), ensure_ascii=False, indent=2))
+        print(json.dumps(snapshot(root, lang), ensure_ascii=False, indent=2))

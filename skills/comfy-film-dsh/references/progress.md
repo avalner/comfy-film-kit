@@ -40,3 +40,21 @@ Rules:
   `.pipeline/progress-server.json`.
 
 Manual one-shot start (no `--serve`) is only for a quick look from a terminal that stays open.
+
+## Language
+
+The panel is **English by default**. When the conversation with the user is Russian, the panel is
+Russian too:
+
+```powershell
+$env:COMFY_FILM_LANG = 'ru'     # one line before `film run`; the panel inherits it
+& $py 'I:/Video Generation/Tools/comfy-film/scripts/progress.py' `
+    --project 'I:/Video Generation/Elemental Creatures/<name>' --serve --lang ru
+```
+
+Precedence: `--lang` > `COMFY_FILM_LANG` > English. A running panel keeps the language it was
+started with — `film run` restarts a panel whose language differs, so the page always matches the
+chat. Append `?lang=ru` or `?lang=en` to a panel URL to switch one view without restarting it. The
+same rule applies to `upscale_progress.py`, `image-progress.py` and the `serve-media.py` watch page.
+
+Never mix: a Russian message with an English panel reads as a bug, and vice versa.

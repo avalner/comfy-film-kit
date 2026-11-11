@@ -57,7 +57,7 @@ AUDIO_EXT = {".mp3", ".wav", ".m4a", ".ogg", ".flac"}
 WATCH_PREFIX = "/watch/"
 
 PAGE = """<!doctype html>
-<html lang="ru">
+<html lang="{lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -74,7 +74,7 @@ PAGE = """<!doctype html>
 </head>
 <body>
 <main><video controls autoplay {extra} src="{src}"></video></main>
-<footer><span>{name}</span><a href="{raw}">файл напрямую</a></footer>
+<footer><span>{name}</span><a href="{raw}">{link}</a></footer>
 </body>
 </html>
 """
@@ -162,6 +162,21 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
 
+        # Page language: ?lang=ru, else COMFY_FILM_LANG, else English. The parameter is a
+        # view control, so it is stripped before the query is forwarded to the media file.
+        lang = (os.environ.get("COMFY_FILM_LANG") or "en").strip().lower()[:2]
+        lang = "ru" if lang == "ru" else "en"
+        forwarded = []
+        for part in (query or "").split("&"):
+            if not part:
+                continue
+            key, _, value = part.partition("=")
+            if key == "lang":
+                lang = "ru" if value.lower().startswith("ru") else "en"
+            else:
+                forwarded.append(part)
+        query = "&".join(forwarded)
+
         rel = "/" + url_path[len(WATCH_PREFIX) :].lstrip("/")
         src = urllib.parse.quote(rel, safe="/")
         if query:
@@ -176,6 +191,8 @@ class Handler(BaseHTTPRequestHandler):
             src=html.escape(src, quote=True),
             raw=html.escape(src, quote=True),
             extra=extra,
+            lang=lang,
+            link="файл напрямую" if lang == "ru" else "open file directly",
         ).encode("utf-8")
         self.send_payload(page, "text/html; charset=utf-8", head_only=not body)
 
