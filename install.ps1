@@ -18,7 +18,7 @@
 [CmdletBinding()]
 param(
     [string]$ToolsRoot,
-    [string]$ComfyRoot = 'I:\Video Generation\ComfyUI_windows_portable',
+    [string]$ComfyRoot = '',
     [string]$DshSkills,
     [string]$CodexSkills,
     [string]$FilmsPath = '',
@@ -36,7 +36,27 @@ if (-not $DshSkills) { $DshSkills = Join-Path $HOME '.dsh\skills' }
 if (-not $CodexSkills) { $CodexSkills = Join-Path $HOME '.codex\skills' }
 
 $ToolsRoot = (Resolve-Path $ToolsRoot).Path.TrimEnd('\')
-$ComfyRoot = $ComfyRoot.TrimEnd('\')
+
+# Where is ComfyUI? Never invent a drive: keep a working profile, then look next to the kit.
+# If it is still unknown the engine installer (setup/install-comfy.ps1) decides, after the user
+# has been asked, and writes machine.json itself.
+if (-not $ComfyRoot) {
+    $profilePath = Join-Path $ToolsRoot 'comfy-film\assets\machine.json'
+    if (Test-Path $profilePath) {
+        try {
+            $knownPy = (Get-Content $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json).python
+            if ($knownPy -and (Test-Path $knownPy)) { $ComfyRoot = Split-Path (Split-Path $knownPy -Parent) -Parent }
+        }
+        catch { }
+    }
+}
+if (-not $ComfyRoot) {
+    foreach ($candidate in @((Join-Path $ToolsRoot 'ComfyUI_windows_portable'),
+                             (Join-Path (Split-Path $ToolsRoot -Parent) 'ComfyUI_windows_portable'))) {
+        if (Test-Path (Join-Path $candidate 'python_embeded\python.exe')) { $ComfyRoot = $candidate; break }
+    }
+}
+if ($ComfyRoot) { $ComfyRoot = $ComfyRoot.TrimEnd('\') }
 
 $filmPy = Join-Path $ToolsRoot 'comfy-film\scripts\film.py'
 if (-not (Test-Path $filmPy)) {
@@ -82,7 +102,7 @@ function New-SkillLink([string]$LinkPath, [string]$TargetPath, [string]$Label) {
 Write-Host ''
 Write-Host "comfy-film-kit"
 Write-Host "  tools : $ToolsRoot"
-Write-Host "  comfy : $ComfyRoot"
+Write-Host "  comfy : $(if ($ComfyRoot) { $ComfyRoot } else { '(not found yet - the engine installer decides after asking)' })"
 Write-Host ''
 
 # ---------------------------------------------------------------- machine.json
@@ -96,7 +116,7 @@ if (Test-Path $machinePath) {
         $script:skipped += 'machine.json - exists (use -Force to regenerate)'
     }
 }
-if ((Test-Path $exampleMachine) -and ($Force -or -not (Test-Path $machinePath))) {
+if ((Test-Path $exampleMachine) -and $ComfyRoot -and ($Force -or -not (Test-Path $machinePath))) {
     $comfySlash = $ComfyRoot.Replace('\', '/')
     $toolsSlash = $ToolsRoot.Replace('\', '/')
     $text = Get-Content $exampleMachine -Raw -Encoding UTF8
@@ -197,9 +217,15 @@ Write-Host ''
 Write-Host 'Skipped:'
 if ($script:skipped.Count -eq 0) { Write-Host '  (nothing)' } else { $script:skipped | ForEach-Object { Write-Host "  = $_" } }
 Write-Host ''
-Write-Host 'Next: check the machine profile, then'
-Write-Host "  & '$ComfyRoot\python_embeded\python.exe' '$ToolsRoot\comfy-film\scripts\film.py' doctor --project <project>"
-Write-Host ''
-Write-Host 'No ComfyUI or models yet? Check what is missing first (downloads nothing):'
-Write-Host "  pwsh -File '$ToolsRoot\setup\install-comfy.ps1' -Modes video,long -Check"
+if ($ComfyRoot) {
+    Write-Host 'Next: check the machine profile, then'
+    Write-Host "  & '$ComfyRoot\python_embeded\python.exe' '$ToolsRoot\comfy-film\scripts\film.py' doctor --project <project>"
+}
+else {
+    Write-Host 'ComfyUI was not found on this machine, so machine.json was not written.'
+    Write-Host 'Run the engine installer: it reports what is missing first (downloads nothing):'
+    Write-Host "  pwsh -File '$ToolsRoot\setup\install-comfy.ps1' -Modes video,long -Check"
+    Write-Host 'Then install with the modes and the folder the user agreed to:'
+    Write-Host "  pwsh -File '$ToolsRoot\setup\install-comfy.ps1' -Modes video,long -ComfyRoot 'D:\ComfyUI_windows_portable'"
+}
 Write-Host ''

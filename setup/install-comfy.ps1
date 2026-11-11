@@ -120,8 +120,21 @@ function Get-FreeGB([string]$Path) {
 
 function Find-ComfyRoot {
     if ($ComfyRoot) { return $ComfyRoot }
-    $known = 'I:\Video Generation\ComfyUI_windows_portable'
-    if (Test-Path (Join-Path $known 'python_embeded\python.exe')) { return $known }
+    # 1. an install this kit already points at, and whose interpreter really exists
+    $profilePath = Join-Path $ToolsRoot 'comfy-film\assets\machine.json'
+    if (Test-Path $profilePath) {
+        try {
+            $knownPy = (Get-Content $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json).python
+            if ($knownPy -and (Test-Path $knownPy)) { return (Split-Path (Split-Path $knownPy -Parent) -Parent) }
+        }
+        catch { }
+    }
+    # 2. a portable ComfyUI next to the kit or one level up
+    foreach ($candidate in @((Join-Path $ToolsRoot 'ComfyUI_windows_portable'),
+                             (Join-Path (Split-Path $ToolsRoot -Parent) 'ComfyUI_windows_portable'))) {
+        if (Test-Path (Join-Path $candidate 'python_embeded\python.exe')) { return $candidate }
+    }
+    # 3. the fixed drive with the most free space — the default the user is told about before installing
     $bestDrive, $bestFree = $null, 0
     foreach ($d in Get-PSDrive -PSProvider FileSystem) {
         if ($d.Free -and $d.Free -gt $bestFree) { $bestDrive = $d.Root; $bestFree = $d.Free }
@@ -372,7 +385,17 @@ function Write-Machine([string]$Root, [string]$FFmpeg) {
     $assets = Join-Path $ToolsRoot 'comfy-film\assets'
     $example = Join-Path $assets 'machine.example.json'
     $target = Join-Path $assets 'machine.json'
-    if ((Test-Path $target) -and -not $Force) { Say "  = machine.json already exists (use -Force to rewrite)"; return }
+    if (Test-Path $target) {
+        # A profile that points at a vanished interpreter is worse than none: rewrite it.
+        $stale = $false
+        try {
+            $oldPy = (Get-Content $target -Raw -Encoding UTF8 | ConvertFrom-Json).python
+            $stale = -not ($oldPy -and (Test-Path $oldPy))
+        }
+        catch { $stale = $true }
+        if ($stale) { Say '  ! machine.json points at a missing interpreter: rewriting it' }
+        elseif (-not $Force) { Say "  = machine.json already exists (use -Force to rewrite)"; return }
+    }
     $comfySlash = $Root.Replace('\', '/')
     $toolsSlash = $ToolsRoot.Replace('\', '/')
     $text = (Get-Content $example -Raw -Encoding UTF8).Replace('<COMFYUI_ROOT>', $comfySlash).Replace('<TOOLS_ROOT>', $toolsSlash)

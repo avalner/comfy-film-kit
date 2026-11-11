@@ -32,7 +32,9 @@ One message, then one question:
 - **Which modes?** They come from `modes.md`. The download is per mode group: `video`/`long` 39 GB,
   `refs` +20 GB, `lipsync` +32 GB (a different checkpoint). Modes share the encoder and VAEs.
 - **Where?** The default is an existing ComfyUI, otherwise the fixed drive with the most free space.
-  Say the path you are about to use.
+  Say the path you are about to use. If neither exists, nothing is guessed: `install.ps1` reports
+  "ComfyUI was not found" and leaves `machine.json` alone, and the engine installer reports the path
+  it *would* use — then the choice is the user's, passed as `-ComfyRoot`.
 - **Time.** Tens of GB over a home connection is hours. Downloads resume, so an interrupted run is
   not a restart — rerun the same command.
 
