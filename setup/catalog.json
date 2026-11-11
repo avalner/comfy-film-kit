@@ -744,5 +744,23 @@
     }
    }
   }
+ },
+ "node_packs": {
+  "video": [
+   "ComfyUI-KJNodes"
+  ],
+  "long": [
+   "ComfyUI-KJNodes",
+   "ComfyUI-VideoHelperSuite"
+  ],
+  "refs": [
+   "ComfyUI-KJNodes",
+   "ComfyUI-VideoHelperSuite"
+  ],
+  "lipsync": [
+   "ComfyUI-KJNodes",
+   "ComfyUI-H3-NativeAudioLock",
+   "Comfyui_Minimax_h3_latent_Upscaler"
+  ]
  }
 }

@@ -42,7 +42,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string[]]$Modes = @('video'),
+    [string[]]$Modes = @(),
     [string]$ComfyRoot = '',
     [ValidateSet('auto', 'lite', 'standard', 'max')][string]$Profile = 'auto',
     [ValidateSet('auto', 'int8', 'nvfp4')][string]$VideoModel = 'auto',
@@ -196,6 +196,9 @@ function Resolve-Plan {
 
     $all = @($cat.modes.PSObject.Properties.Name)
     if ($ModeList -contains 'all') { $ModeList = $all }
+    if (-not $ModeList -or $ModeList.Count -eq 0) {
+        Fail ("Nothing selected. Pass -Modes with the modes the user chose, e.g. -Modes video,long. Available: " + ($all -join ', '))
+    }
     $unknown = @($ModeList | Where-Object { $all -notcontains $_ })
     if ($unknown.Count) {
         Fail ("Unknown mode(s): {0}. Available: {1}" -f ($unknown -join ', '), ($all -join ', '))
@@ -225,6 +228,16 @@ function Resolve-Plan {
         if ($opt) { foreach ($r in $opt) { $roles[$r] = $true } }
     }
 
+    # Only the node packs these modes actually use. A mode without a mapping gets everything.
+    $packNames = @()
+    $unmapped = @()
+    foreach ($m in $ModeList) {
+        $p = $cat.node_packs.$m
+        if ($p) { $packNames += $p } else { $unmapped += $m }
+    }
+    if ($unmapped.Count) { $packNames += @($cat.nodes | ForEach-Object { $_.name }) }
+    $packs = @($packNames | Sort-Object -Unique)
+
     $models = @()
     foreach ($roleName in $roles.Keys) {
         $roleDef = $cat.roles.PSObject.Properties[$roleName]
@@ -241,6 +254,7 @@ function Resolve-Plan {
         profile = $profile
         modes = @($ModeList)
         models = $models
+        packs = $packs
         total = [long](($models | Measure-Object -Property size -Sum).Sum)
     }
 }
@@ -312,7 +326,7 @@ function Install-Comfy {
 }
 
 function Install-Nodes {
-    param([string]$Root)
+    param([string]$Root, [string[]]$Packs)
     $py = Join-Path $Root 'python_embeded\python.exe'
     $nodesDir = Join-Path $Root 'ComfyUI\custom_nodes'
     if (-not (Test-Path $nodesDir)) { New-Item -ItemType Directory -Force $nodesDir | Out-Null }
@@ -320,6 +334,7 @@ function Install-Nodes {
     $env:PYTHONUTF8 = '1'
 
     foreach ($pack in $cat.nodes) {
+        if ($Packs -and ($Packs -notcontains $pack.name)) { Say ("  - nodes: {0} (not needed for these modes)" -f $pack.name); continue }
         $target = Join-Path $nodesDir $pack.name
         if (Test-Path $target) { Say ("  = nodes: {0}" -f $pack.name); continue }
         if ($Check) { continue }
@@ -440,7 +455,9 @@ elseif ($hw.driver -gt 0 -and $hw.driver -lt [double]$cat.min_driver) {
 $plan = Resolve-Plan -Hw $hw -ModeList $Modes
 $script:result.profile = $plan.profile
 $script:result.modes = $plan.modes
+$script:result | Add-Member -NotePropertyName node_packs -NotePropertyValue $plan.packs -Force
 Say ("  Modes:  {0}  (profile: {1})" -f ($plan.modes -join ', '), $plan.profile)
+Say ("  Nodes:  {0}" -f ($plan.packs -join ', '))
 Say ("  Models: {0} files, {1:N1} GB" -f $plan.models.Count, ($plan.total / 1GB))
 
 if ($script:result.disk_free_gb -gt 0 -and $script:result.disk_free_gb -lt [math]::Ceiling($plan.total / 1GB)) {
@@ -451,7 +468,7 @@ Head '1/4 ComfyUI'
 Install-Comfy -Root $root
 
 Head '2/4 custom nodes'
-if ($SkipNodes) { Say '  - skipped' } else { Install-Nodes -Root $root }
+if ($SkipNodes) { Say '  - skipped' } else { Install-Nodes -Root $root -Packs $plan.packs }
 
 Head '3/4 models'
 foreach ($m in $plan.models) {

@@ -31,6 +31,9 @@ One message, then one question:
 
 - **Which modes?** They come from `modes.md`. The download is per mode group: `video`/`long` 39 GB,
   `refs` +20 GB, `lipsync` +32 GB (a different checkpoint). Modes share the encoder and VAEs.
+  Only what the chosen modes need is installed: the model roles **and** the node packs (for example
+  `video` pulls one pack, `lipsync` three). `-Check` prints both lists before anything is downloaded.
+  `-Modes` is required — with no modes the script stops and lists the options instead of guessing.
 - **Where?** The default is an existing ComfyUI, otherwise the fixed drive with the most free space.
   Say the path you are about to use. If neither exists, nothing is guessed: `install.ps1` reports
   "ComfyUI was not found" and leaves `machine.json` alone, and the engine installer reports the path
