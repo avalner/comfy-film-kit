@@ -11,8 +11,8 @@ So the rule is split by type.
 ## Images and documents — path link
 
 ```markdown
-[keyframes-compare.png](<I:\Video Generation\Elemental Creatures\moss snail\.pipeline\keyframes-compare.png>)
-[prompt-ru-part1-v3.txt](<I:\Video Generation\Elemental Creatures\moss snail\prompt-ru-part1-v3.txt>)
+[keyframes-compare.png](<$Films\<name>\.pipeline\kfcheck.png>)
+[prompt-ru-part1-v3.txt](<$Films\<name>\part-1.txt>)
 ```
 
 Absolute path, angle brackets (spaces), link in normal text — not inside a code block.
@@ -22,9 +22,9 @@ Absolute path, angle brackets (spaces), link in normal text — not inside a cod
 Start the server once per session; it serves the whole tree, so every project shares it.
 
 ```powershell
-$py = 'C:/Users/avaln/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'
-& $py 'I:\Video Generation\Tools\skills\comfy-film-dsh\scripts\serve-media.py' `
-    --directory 'I:/Video Generation' --port 8199                        # background job
+$py = $P.python   # from paths.json, see "Paths" in SKILL.md
+& $py '$Tools\skills\comfy-film-dsh\scripts\serve-media.py' `
+    --directory $MediaRoot --port 8199                        # background job
 ```
 
 Use `serve-media.py`, not `python -m http.server`. The stdlib handler ignores the
@@ -44,10 +44,10 @@ tiny HTML page with a `<video>` element, which commits normally, so the banner
 is gone. The raw path still works and still supports `Range`; use it only inside
 the page, or for `curl`/ffmpeg checks.
 
-Then post the URL, relative to `I:/Video Generation` and URL-encoded:
+Then post the URL, relative to `$MediaRoot` and URL-encoded:
 
 ```
-http://127.0.0.1:8199/watch/Elemental%20Creatures/moss%20snail/outputs/moss-snail-final-v15.mp4
+http://127.0.0.1:8199/watch/<project>/outputs/<clip>.mp4
 ```
 
 Verify before posting — a dead link is worse than no link:

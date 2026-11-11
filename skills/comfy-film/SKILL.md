@@ -5,12 +5,20 @@ description: Generate and assemble reviewed ComfyUI MiniMax H3 films; publish ap
 
 # ComfyUI film pipeline
 
-**Paths first.** This text is written against the author's machine (`I:\Video Generation\Tools`,
-ComfyUI in `I:\Video Generation\ComfyUI_windows_portable`). Elsewhere, resolve them once from
-`paths.json` in the kit root — `tools`, `comfy`, `python`, `ffmpeg`, `ffprobe` — and substitute those
-values for the literals below. A path copied straight out of this document fails on a missing file.
+**Paths first.** Nothing here is an absolute path: the text uses `$Tools` (this checkout), `$Comfy`
+(the ComfyUI portable root), `$py` (its interpreter), `$Films`, `$Series`, `$Paintings` and
+`$MediaRoot`. Resolve them once from `paths.json` in the kit root:
 
-Use `scripts/film.py` (or `scripts/film.cmd`), never recreate controllers or poll ComfyUI through model turns. Python and local startup settings are in `assets/machine.json`. The `scripts/` and `assets/` folders in this skill are Windows junctions to `I:/Video Generation/Tools/comfy-film/`, which is the single editable copy shared with the DSH skill `comfy-film-dsh`; edit there, not in a copy. `run`/`doctor` start ComfyUI hidden if needed; await that process, without a second launcher. Default portrait canvas: H3 FL2VA Turbo 8, 24 fps, 768x1344; dimensions must be divisible by 32.
+```powershell
+$P = Get-Content '<kit>\paths.json' -Raw | ConvertFrom-Json
+$Tools = $P.tools; $Comfy = $P.comfy; $py = $P.python
+$Films = $P.films; $Series = $P.series; $Paintings = $P.paintings; $MediaRoot = $P.media
+```
+
+`install.ps1` writes that file. If it is missing, run the installer — a path used without resolving
+it fails on a missing file and reads like a broken install.
+
+Use `scripts/film.py` (or `scripts/film.cmd`), never recreate controllers or poll ComfyUI through model turns. Python and local startup settings are in `assets/machine.json`. The `scripts/` and `assets/` folders in this skill are Windows junctions to `$Tools/comfy-film/`, which is the single editable copy shared with the DSH skill `comfy-film-dsh`; edit there, not in a copy. `run`/`doctor` start ComfyUI hidden if needed; await that process, without a second launcher. Default portrait canvas: H3 FL2VA Turbo 8, 24 fps, 768x1344; dimensions must be divisible by 32.
 
 ## Resume and context budget
 
@@ -18,7 +26,7 @@ Use `scripts/film.py` (or `scripts/film.cmd`), never recreate controllers or pol
 - Use existing scripts and their compact results. Do not routinely read source code, workflow graphs, whole manifests, old chats, logs, journals or image contact sheets. Inspect them only to resolve a specific uncertainty/failure.
 - Read each needed reference once per available context, only for the current operation. Do not load every linked file. Reuse known settings, commands, approvals and authorization.
 - Save concise current decisions in `brief.md`: creative intent, approved frame paths/roles/versions, accepted final export, next action and unresolved issue. Update the current summary rather than accumulating repeated transcripts. Preserve prior media and approval records.
-- Paths: films `I:/Video Generation/Projects/<English name>`; creatures `I:/Video Generation/Elemental Creatures/<English name>`. Honor explicit destinations. Keep one film's segments in one project.
+- Paths: films `$Films/<English name>`; creatures `$Series/<English name>`. Honor explicit destinations. Keep one film's segments in one project.
 
 ## Efficient execution
 
@@ -47,7 +55,7 @@ Every video candidate needs explicit acceptance; technical success is insufficie
 
 ## Assemble or publish
 
-- Final upscale is optional and runs only when the user requests it. By default, deliver the native-resolution final using `I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/finalize_delivery.py --no-upscale`; the shared wrapper otherwise starts upscaling, so include this flag when upscale was not requested. Do not add a separate approval question just to skip upscale. When requested, use a single 2× SeedVR2 3B FP16 pass after assembly, without a preceding Real-ESRGAN pass: omit `--no-upscale` and use `--scale 2`. Free the idle ComfyUI server's loaded GPU models before standalone upscaling; never interrupt active jobs. Review temporal stability and identity because SeedVR2 can invent details. Deliver the requested 2× version as primary and retain the native file. Keep segment clips at native resolution for `--guide` continuity.
+- Final upscale is optional and runs only when the user requests it. By default, deliver the native-resolution final using `$Tools/skills/comfy-film-dsh/scripts/finalize_delivery.py --no-upscale`; the shared wrapper otherwise starts upscaling, so include this flag when upscale was not requested. Do not add a separate approval question just to skip upscale. When requested, use a single 2× SeedVR2 3B FP16 pass after assembly, without a preceding Real-ESRGAN pass: omit `--no-upscale` and use `--scale 2`. Free the idle ComfyUI server's loaded GPU models before standalone upscaling; never interrupt active jobs. Review temporal stability and identity because SeedVR2 can invent details. Deliver the requested 2× version as primary and retain the native file. Keep segment clips at native resolution for `--guide` continuity.
 - Name the native export `<video name>-final-<version>.mp4` and the primary 2× export `<video name>-final-<version>-2x.mp4`. No other suffixes such as `compatible`, `lighting`, `review`, or `fixed`. For a revised final, increment the version; preserve existing versions.
 - Deliverable MP4s must use H.264 8-bit `yuv420p` and AAC audio (when present), with `+faststart`, for default Windows player compatibility. Preserve this after every finishing/re-encode step, including lighting correction; verify codec and pixel format with ffprobe as well as decoding. Do not deliver High 4:4:4 / `yuv444p` as the playback copy.
 - For final processing, use the `finalize_delivery.py` wrapper (syntax in commands.md) rather than ad hoc assembly/encoding/copy commands. It invokes `scripts/finalize.py` for accepted clips or an existing candidate; use `--no-upscale` by default and enable 2× upscale only on user request. It does not approve or publish media.

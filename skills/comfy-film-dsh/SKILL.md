@@ -7,7 +7,7 @@ description: ComfyUI MiniMax H3 short-film production inside DeepSeek Harness �
 
 This is the DSH counterpart of the Codex `comfy-film` skill. The controller is shared and now lives outside Codex:
 
-`I:/Video Generation/Tools/comfy-film/`
+`$Tools/comfy-film/`
 
 - `scripts/film.py`, `finalize.py`, `match_lighting.py`, `youtube.py`, `progress.py` (+ `progress.html/js`, `progress-worker.cjs`)
 - `assets/machine.json` (Python path, ComfyUI startup), `assets/youtube.json` (channel, playlists)
@@ -16,26 +16,32 @@ The Codex skill keeps its `scripts/` and `assets/` as Windows junctions to that 
 
 ## Paths — resolve once, before the first command
 
-Every command in this skill and in its references is written against the author's machine:
+Nothing in this skill text is an absolute path: it uses a handful of variables, and you resolve them
+once per session from `paths.json` in the kit root.
 
-| What | Literal in the text |
+| Variable | What it is |
 |---|---|
-| the kit | `I:\Video Generation\Tools` |
-| ComfyUI | `I:\Video Generation\ComfyUI_windows_portable` |
-| the interpreter | `I:/Video Generation/ComfyUI_windows_portable/python_embeded/python.exe` |
-
-On any other machine those are wrong, and a command copied out of this document fails on a missing
-file — which reads like a broken install rather than a wrong path. Resolve them first:
+| `$Tools` | this checkout (the kit) |
+| `$Comfy` | the ComfyUI portable root, the folder that holds `python_embeded` |
+| `$py` | the interpreter: `$Comfy/python_embeded/python.exe` |
+| `$Films` | where film projects live |
+| `$Series` | the Elemental Creatures series root (only if the user has one) |
+| `$Paintings` | the Paintings series root (only if the user has one) |
+| `$MediaRoot` | the tree the media preview server serves, so `/watch/...` links resolve |
+| `$P` | the whole record, for `$P.ffmpeg`, `$P.ffprobe` |
 
 ```powershell
-$P     = Get-Content '<kit>\paths.json' -Raw | ConvertFrom-Json   # <kit> is the one path you type
-$Tools = $P.tools; $Comfy = $P.comfy; $py = $P.python
-$film  = "$Tools/comfy-film/scripts/film.py"
+$P         = Get-Content '<kit>\paths.json' -Raw | ConvertFrom-Json   # the one path you type
+$Tools     = $P.tools;  $Comfy = $P.comfy;  $py = $P.python
+$Films     = $P.films;  $Series = $P.series; $Paintings = $P.paintings
+$MediaRoot = $P.media
+$film      = "$Tools/comfy-film/scripts/film.py"
 ```
 
-`paths.json` is written by `install.ps1` and holds `tools`, `comfy`, `python`, `ffmpeg`, `ffprobe`.
-If it is missing, run `install.ps1` — do not guess a drive letter. When you quote a command to the
-user, quote the resolved one, not the literal from this text.
+`install.ps1` writes `paths.json`; it holds `tools`, `comfy`, `python`, `ffmpeg`, `ffprobe`, `films`,
+`series`, `paintings`, `media`. If the file is missing, run `install.ps1` — do not guess a drive
+letter, and do not run a command whose variables you have not resolved. When you quote a command to
+the user, quote it with these values filled in.
 
 ## Start of a session
 
@@ -68,7 +74,7 @@ Everything about generation, acceptance gates, assembly and publication carries 
 
 1. **Review after every generated clip.** Show the clip, then ask accept / change / reject. Do not continue to the next segment without an explicit answer. Silence is not acceptance.
 2. **Keyframes come from one photo.** If the first and last frames show the same background in different states, FL2VA will morph it over ten seconds. Build the second keyframe by editing the first (see `references/artifact-playbook.md`) or start the film from the design frame.
-3. **Prompt per the H3 guide.** Read `C:/Users/avaln/.codex/skills/h3-prompt-writing/references/base-en.txt` before writing. Header timecode = real duration to two decimals (243 frames → `10.13`). `[Shot 1]` opens with the style, static camera is `The camera holds a static shot`.
+3. **Prompt per the H3 guide.** Read `$Tools/skills/h3-prompt-writing/references/base-en.txt` before writing. Header timecode = real duration to two decimals (243 frames → `10.13`). `[Shot 1]` opens with the style, static camera is `The camera holds a static shot`.
 4. **No negative word lists in prompts.** "no swelling, no sprouting, no spikes" seeds those exact concepts. State the positive state instead.
 5. **Deliverable naming** — `<name>-final-vN.mp4`, H.264 `yuv420p`, AAC, `+faststart`, decode checked. Use `finalize.py` (under DSH: `scripts/finalize_sandbox.py`).
 6. **Publication needs metadata approval** even when the user already said "publish".
@@ -117,9 +123,9 @@ Rules for the two passes:
 ## DSH-side execution
 
 ```powershell
-$py = 'C:/Users/avaln/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'
-$tools = 'I:/Video Generation/Tools/comfy-film/scripts'
-& $py "$tools/film.py" status --project 'I:/Video Generation/Elemental Creatures/<name>'
+$py   = $P.python      # resolved in "Paths" above
+$film = "$Tools/comfy-film/scripts/film.py"
+& $py $film status --project '$Films/<name>'
 ```
 
 Long renders: run `wait` as a background job and collect it with `job_output`; never poll in a loop. A wait timeout never authorizes resubmission.
@@ -129,13 +135,13 @@ Media: the DSH sidebar previews images and documents from a **local path**, but 
 - Images/documents — markdown link, absolute path in angle brackets, normal text:
 
 ```markdown
-[keyframes-compare.png](<I:\Video Generation\Elemental Creatures\<name>\.pipeline\kfcheck.png>)
+[keyframes-compare.png](<$Films\<name>\.pipeline\kfcheck.png>)
 ```
 
 - Video — HTTP link from the shared preview server (start once per session, whole tree):
 
 ```powershell
-& $py 'I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/serve-media.py' --directory 'I:/Video Generation' --port 8199
+& $py '$Tools/skills/comfy-film-dsh/scripts/serve-media.py' --directory $MediaRoot --port 8199
 ```
 
 `serve-media.py`, not `python -m http.server`: the stdlib handler ignores `Range`, so the player cannot seek and aborts on every scrub.
@@ -143,7 +149,7 @@ Media: the DSH sidebar previews images and documents from a **local path**, but 
 Always link `/watch/...`, never the bare file path. Navigating straight to an `.mp4` makes the embedded Browser show its red «The page could not load» banner once per tab; `/watch/` serves an HTML page with a `<video>` element, which loads cleanly.
 
 ```
-http://127.0.0.1:8199/watch/Elemental%20Creatures/<name>/outputs/<clip>.mp4
+http://127.0.0.1:8199/watch/<project>/outputs/<clip>.mp4
 ```
 
 Verify `HEAD` = 200 on the `/watch/` URL, and `Range: bytes=0-1023` = 206 on the raw file, before posting. Full rules: `references/media.md`.
@@ -285,7 +291,7 @@ Rules that go with it:
   Then describe style, scene and characters in full (there is no first image to lean on), state what
   the guide clip ends on and that the take carries that motion straight on, and time the beats from
   `00:00.92` in `MM:SS.ss` form. Working example:
-  `I:/Video Generation/Elemental Creatures/extreme sunflower/part-3-guide-last-prompt.txt`.
+  `$Series/extreme sunflower/part-3-guide-last-prompt.txt`.
 - **The final segment cannot use `--loop`** — it does not combine with `--guide`. Extract the opening
   frame instead and pass it as `--last`:
 
@@ -318,14 +324,14 @@ Do this only when no render is in flight, and never delete the archived takes.
 the deliver directory.
 
 ```powershell
-$py 'I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/finalize_delivery.py' `
+$py '$Tools/skills/comfy-film-dsh/scripts/finalize_delivery.py' `
     --project PROJECT --name NAME --deliver-dir OUTPUTS
 ```
 
 - Outputs `<name>-final-vN.mp4` and `<name>-final-vN-2x.mp4` (1216×2112 from a 608×1056 film), H.264
   CRF 16, audio copied, `+faststart`, decode verified, source untouched, no overwrite.
 - `--no-upscale` skips the second file; `--scale 3` upscales ×3. The upscaler lives outside ComfyUI
-  at `I:/Video Generation/Tools/realesrgan/` (ncnn Vulkan, `realesr-animevideov3`); 480 frames take
+  at `$Tools/realesrgan/` (ncnn Vulkan, `realesr-animevideov3`); 480 frames take
   ~42 s plus the encode.
 - The upscale is cosmetic sharpening: it does not restore detail the VAE never encoded, and the
   motion profile stays identical (verified on v5-2x — no flicker). For real detail start the project

@@ -1,6 +1,6 @@
 # Post-production tools in ComfyUI
 
-Installed 2026-10-29 into `I:\Video Generation\ComfyUI_windows_portable\ComfyUI\custom_nodes`:
+Installed 2026-10-29 into `$Comfy\ComfyUI\custom_nodes`:
 
 | Pack | Repo | Nodes we use |
 |---|---|---|
@@ -18,7 +18,7 @@ ComfyUI only registers nodes at startup. Restart it and verify:
 ```powershell
 $p = Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like '*ComfyUI*main.py*' }
 if ($p) { Stop-Process -Id $p.ProcessId -Force }
-& 'I:\Video Generation\ComfyUI_windows_portable\python_embeded\python.exe' 'I:\Video Generation\Tools\comfy-film\scripts\film.py' start --project 'I:/Video Generation/Elemental Creatures/<name>'
+& '$Comfy\python_embeded\python.exe' '$Tools\comfy-film\scripts\film.py' start --project '$Films/<name>'
 ```
 
 Then check `http://127.0.0.1:8188/object_info` for `ProPainterInpaint`, `RIFE VFI`, `VHS_LoadVideoPath`.
@@ -35,8 +35,8 @@ Tested workflow: `assets/workflows/rife-2x.json` (485 frames out of a 243-frame 
 One command does the whole chain:
 
 ```powershell
-& $emb 'I:\Video Generation\Tools\skills\comfy-film-dsh\scripts\rife.py' `
-  --input 'I:\...\clips\segment-0015.mp4' --speed 1.3 --prefix 'rife_test/name' --out 'I:\...\out.mp4'
+& $emb '$Tools\skills\comfy-film-dsh\scripts\rife.py' `
+  --input '$Films\...\clips\segment-0015.mp4' --speed 1.3 --prefix 'rife_test/name' --out '$Films\...\out.mp4'
 ```
 
 It interpolates, then retimes with `setpts` + `atempo`, prints the interpolated path, the output probe and the final path. Tested on a 10.125 s clip: 485 frames at 48 fps, then 187 frames at 24 fps / 7.79 s.
@@ -48,7 +48,7 @@ Manual route, if the script is unavailable:
 3. Speed it up and deliver:
 
 ```powershell
-$ff = 'C:/Program Files/Shotcut/ffmpeg.exe'
+$ff = $P.ffmpeg
 & $ff -y -i IN_48FPS.mp4 -filter_complex "[0:v]setpts=PTS/1.3,fps=24[v];[0:a]atempo=1.3[a]" `
   -map "[v]" -map "[a]" -c:v libx264 -crf 17 -preset fast -pix_fmt yuv420p `
   -c:a aac -b:a 192k -movflags +faststart OUT_24FPS.mp4

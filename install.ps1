@@ -21,6 +21,10 @@ param(
     [string]$ComfyRoot = 'I:\Video Generation\ComfyUI_windows_portable',
     [string]$DshSkills,
     [string]$CodexSkills,
+    [string]$FilmsPath = '',
+    [string]$SeriesPath = '',
+    [string]$PaintingsPath = '',
+    [string]$MediaRootPath = '',
     [switch]$SkipCodex,
     [switch]$Force
 )
@@ -164,12 +168,23 @@ if (Test-Path $machinePath) { $machine = Get-Content $machinePath -Raw -Encoding
 $pythonPath = if ($machine -and $machine.python) { $machine.python } else { $ComfyRoot.Replace('\', '/') + '/python_embeded/python.exe' }
 $ffmpegPath = if ($machine -and $machine.ffmpeg) { $machine.ffmpeg } else { 'ffmpeg' }
 $ffprobePath = if ($machine -and $machine.ffprobe) { $machine.ffprobe } else { 'ffprobe' }
+# Project locations default to the kit's siblings; override with -Films/-Series/-Paintings/-Media.
+$kitParent = Split-Path $ToolsRoot -Parent
+if (-not $FilmsPath) { $FilmsPath = Join-Path $kitParent 'Projects' }
+if (-not $SeriesPath) { $SeriesPath = Join-Path $kitParent 'Elemental Creatures' }
+if (-not $PaintingsPath) { $PaintingsPath = Join-Path $kitParent 'Paintings' }
+if (-not $MediaRootPath) { $MediaRootPath = $kitParent }
+
 $paths = [ordered]@{
-    tools   = $ToolsRoot.Replace('\', '/')
-    comfy   = ($pythonPath -replace '/python_embeded/python\.exe$', '')
-    python  = $pythonPath
-    ffmpeg  = $ffmpegPath
-    ffprobe = $ffprobePath
+    tools      = $ToolsRoot.Replace('\', '/')
+    comfy      = ($pythonPath -replace '/python_embeded/python\.exe$', '')
+    python     = $pythonPath
+    ffmpeg     = $ffmpegPath
+    ffprobe    = $ffprobePath
+    films      = ($FilmsPath.Replace('\', '/'))
+    series     = ($SeriesPath.Replace('\', '/'))
+    paintings  = ($PaintingsPath.Replace('\', '/'))
+    media      = ($MediaRootPath.Replace('\', '/'))
 }
 Write-TextFile (Join-Path $ToolsRoot 'paths.json') ($paths | ConvertTo-Json)
 $script:done += 'paths.json - written (this is what the skills resolve against)'

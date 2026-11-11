@@ -8,7 +8,7 @@ that is already there.
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File `
-  'I:\Video Generation\Tools\setup\install-comfy.ps1' -Modes video,long -Check
+  '$Tools\setup\install-comfy.ps1' -Modes video,long -Check
 ```
 
 Read the last line — it starts with `##RESULT##` and is a compact JSON object:
@@ -42,7 +42,7 @@ Do not start an install the user did not approve, even when `-Check` proves it i
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File `
-  'I:\Video Generation\Tools\setup\install-comfy.ps1' -Modes video,long,refs,lipsync
+  '$Tools\setup\install-comfy.ps1' -Modes video,long,refs,lipsync
 ```
 
 Run it as a background job and collect it with `job_output` — it prints a line per file with GB and
@@ -63,9 +63,9 @@ embedded Python, the FFmpeg pair and the ComfyUI startup line.
 ## 4. Verify
 
 ```powershell
-$py = 'I:\Video Generation\ComfyUI_windows_portable\python_embeded\python.exe'
-& $py 'I:\Video Generation\Tools\comfy-film\scripts\film.py' doctor --project <an existing project>
-& $py 'I:\Video Generation\Tools\comfy-film\scripts\film.py' start  --project <an existing project>
+$py = '$Comfy\python_embeded\python.exe'
+& $py '$Tools\comfy-film\scripts\film.py' doctor --project <an existing project>
+& $py '$Tools\comfy-film\scripts\film.py' start  --project <an existing project>
 ```
 
 `doctor` checks node classes, FFmpeg and the optional libraries without loading models. `start`

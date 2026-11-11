@@ -8,9 +8,9 @@ clicks it.
 Start the panel yourself, once per project, as a persistent background job:
 
 ```powershell
-$py = 'C:/Users/avaln/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'
-& $py 'I:/Video Generation/Tools/comfy-film/scripts/progress.py' `
-    --project 'I:/Video Generation/Elemental Creatures/<name>' --serve      # run_in_background
+$py = $P.python   # from paths.json, see "Paths" in SKILL.md
+& $py '$Tools/comfy-film/scripts/progress.py' `
+    --project '$Films/<name>' --serve      # run_in_background
 ```
 
 `--serve` writes `.pipeline/progress-server.json` (`url`, `pid`) and keeps serving. Verify
@@ -48,8 +48,8 @@ Russian too:
 
 ```powershell
 $env:COMFY_FILM_LANG = 'ru'     # one line before `film run`; the panel inherits it
-& $py 'I:/Video Generation/Tools/comfy-film/scripts/progress.py' `
-    --project 'I:/Video Generation/Elemental Creatures/<name>' --serve --lang ru
+& $py '$Tools/comfy-film/scripts/progress.py' `
+    --project '$Films/<name>' --serve --lang ru
 ```
 
 Precedence: `--lang` > `COMFY_FILM_LANG` > English. A running panel keeps the language it was

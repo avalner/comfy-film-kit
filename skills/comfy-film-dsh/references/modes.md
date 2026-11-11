@@ -101,9 +101,9 @@ tells you which anchors are actually in the graph.
 ## lipsync — the character speaks your audio
 
 ```powershell
-$py 'I:\Video Generation\Tools\comfy-film\scripts\lipsync.py' `
+$py '$Tools\comfy-film\scripts\lipsync.py' `
     --audio voice.mp3 --ref face.png --ref face-side.png `
-    --prompt-file lipsync.txt --project 'I:\Video Generation\Projects\<film>'
+    --prompt-file lipsync.txt --project '$Films\<film>'
 ```
 
 - The video follows the audio: length comes from the file, not from `--seconds` (`--seconds` only

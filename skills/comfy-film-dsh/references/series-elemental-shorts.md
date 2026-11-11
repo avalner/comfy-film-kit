@@ -1,6 +1,10 @@
 # Elemental Creatures — series profile
 
-Skill location: `I:\Video Generation\Tools\skills\comfy-film-dsh\`. Read `SKILL.md` and this profile at the start of a session that touches the series; the controller stays in `C:/Users/avaln/.codex/skills/comfy-film/`.
+> **This is the author's series profile, not part of the generic kit.** It is kept as a worked
+> example of how one series pins its format, pacing and look. Delete it, or copy it to your own
+> `references/<series>.md` and rewrite the facts, before running the skill for somebody else's series.
+> Read it at the start of a session that touches this series; the controller itself is described in
+> `SKILL.md` and the other references.
 
 A YouTube Shorts series of tiny creatures built from natural material: water, glass, amber, coral, leaves, moss, petals, stones. One creature per film. The hook is always the same: ordinary material becomes a creature, the creature does something characterful, then the film closes on the state it started from.
 
@@ -17,7 +21,7 @@ A YouTube Shorts series of tiny creatures built from natural material: water, gl
 
 Photoreal fantasy macro miniature. Golden backlit forest or pond, shallow depth of field, soft bokeh, wet surfaces, tactile material detail, oversized expressive eyes. The creature should read instantly as an animal and as the material it is made of.
 
-Delivery channel: Little Wonder Worlds (@avalner), playlist Elemental Creatures `PLbapMz1CKs5E`, category 22, English, `containsSyntheticMedia: true`, `madeForKids: false`, notify subscribers on.
+Delivery channel and playlist: whatever `assets/youtube.json` configures (this series used a dedicated playlist), category 22, English, `containsSyntheticMedia: true`, `madeForKids: false`, notify subscribers on.
 
 ## Story shapes that worked
 
@@ -42,4 +46,4 @@ Delivery channel: Little Wonder Worlds (@avalner), playlist Elemental Creatures 
 
 ## Bookkeeping
 
-One project per creature: `I:/Video Generation/Elemental Creatures/<english name>`. `brief.md` records creative intent, technical settings, approvals with file names, assembly notes and the published URL. `youtube.json` holds the approved metadata and the publication record.
+One project per creature: `$Series/<english name>`. `brief.md` records creative intent, technical settings, approvals with file names, assembly notes and the published URL. `youtube.json` holds the approved metadata and the publication record.

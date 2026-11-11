@@ -5,7 +5,7 @@ description: Create videos in which a camera approaches a framed painting in a r
 
 # Living paintings
 
-Use this skill for the visual design and compositing of painting videos. Use the installed `comfy-film` controller for generation, reviews, recovery and final delivery: in Codex `C:/Users/avaln/.codex/skills/comfy-film/SKILL.md`, in DeepSeek Harness the `comfy-film-dsh` skill (`C:/Users/avaln/.dsh/skills/comfy-film-dsh/SKILL.md`). Both drive the same `I:/Video Generation/Tools/comfy-film/scripts/film.py`; only the surrounding tools differ. Read the relevant references as needed; do not recreate its controllers. For substantive H3 prompts use `h3-prompt-writing`.
+Use this skill for the visual design and compositing of painting videos. Use the installed `comfy-film` controller for generation, reviews, recovery and final delivery: in Codex `~/.codex/skills/comfy-film/SKILL.md`, in DeepSeek Harness the `comfy-film-dsh` skill (`~/.dsh/skills/comfy-film-dsh/SKILL.md`). Both drive the same `$Tools/comfy-film/scripts/film.py`; only the surrounding tools differ. Read the relevant references as needed; do not recreate its controllers. For substantive H3 prompts use `h3-prompt-writing`.
 
 ## Harness differences (DeepSeek Harness)
 
@@ -21,7 +21,7 @@ Publication, reviews and montage rules are unchanged; they live in the comfy-fil
 
 ## Start or resume
 
-- Keep projects under `I:/Video Generation/Paintings/<English name>`. Store original artwork, room reference, prompts, generated takes, montage clips and final exports inside that project. Avoid dependencies on clipboard/temp files or another project's output folder.
+- Keep projects under `$Paintings/<English name>`. Store original artwork, room reference, prompts, generated takes, montage clips and final exports inside that project. Avoid dependencies on clipboard/temp files or another project's output folder.
 - On resume, run `film status --project PROJECT` and read the current `brief.md`. Technical state lives in `film.json`; approvals are not inferred from file existence.
 - For a new painting, read [workflow.md](references/workflow.md) before designing keyframes or generating video. It contains the tested recipe and specific failures from Living Cafe Painting.
 - Reuse the user's supplied format, timing, sound and camera choices. The previous film's 5s approach + 10s animation + 5s retreat is an example, not an automatic choice for every painting.
@@ -54,4 +54,4 @@ Measure it, do not guess: decode the assembled cut once and print the per-frame 
 
 ## Existing example
 
-`I:/Video Generation/Paintings/Living Cafe Painting` is the tested example. Its `brief.md` preserves decisions and rejected variants; `clips/` contains accepted segments; `.pipeline/drafts/prompts/part2-v4.txt` is the successful living-scene prompt. Final v2 includes the user's music and still awaits explicit final-film approval. These facts do not approve future films or authorize publication.
+`$Paintings/Living Cafe Painting` is the tested example. Its `brief.md` preserves decisions and rejected variants; `clips/` contains accepted segments; `.pipeline/drafts/prompts/part2-v4.txt` is the successful living-scene prompt. Final v2 includes the user's music and still awaits explicit final-film approval. These facts do not approve future films or authorize publication.

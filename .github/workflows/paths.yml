@@ -1,0 +1,35 @@
+name: paths
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  no-machine-paths:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skill text must not contain absolute paths
+        shell: pwsh
+        run: ./check-paths.ps1
+
+  python-syntax:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile every controller script
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem comfy-film/scripts, skills/comfy-film-dsh/scripts -Filter *.py -Recurse
+          foreach ($f in $files) {
+            python -m py_compile $f.FullName
+            if ($LASTEXITCODE -ne 0) { throw "py_compile failed: $($f.FullName)" }
+          }
+          Write-Host "compiled $($files.Count) files"

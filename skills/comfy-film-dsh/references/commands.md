@@ -1,8 +1,8 @@
 # CLI reference
 
-The controller lives at `I:/Video Generation/Tools/comfy-film/` (the Codex skill reaches the same
-files through junctions). Use Python from `I:/Video Generation/Tools/comfy-film/assets/machine.json`
-with `I:/Video Generation/Tools/comfy-film/scripts/film.py`. `film` below is shorthand for that
+The controller lives at `$Tools/comfy-film/` (the Codex skill reaches the same
+files through junctions). Use the interpreter resolved in Paths (`$py`)
+with `$Tools/comfy-film/scripts/film.py`. `film` below is shorthand for that
 invocation; `finalize.py`, `match_lighting.py`, `progress.py` and `youtube.py` sit next to it.
 Every command outputs a compact JSON object; failures have nonzero exit codes.
 
@@ -89,9 +89,9 @@ film add --project PROJECT --ref2va hero.png --ref2va room.png `
 ## Lipsync
 
 ```powershell
-$py 'I:/Video Generation/Tools/comfy-film/scripts/lipsync.py' `
+$py '$Tools/comfy-film/scripts/lipsync.py' `
     --audio voice.mp3 --ref face.png --prompt-file LIPSYNC.txt `
-    --project 'I:/Video Generation/Projects/<film>' [--scale 2] [--width 768 --height 1344]
+    --project '$Films/<film>' [--scale 2] [--width 768 --height 1344]
 ```
 
 Separate entry point, same `machine.json`. Length follows the audio (`--seconds` only cuts it
@@ -132,7 +132,7 @@ film run --project PROJECT --segment 3
   camera, framing and character detail can change after ~4 s, so keep an eye on a 0.5 s contact
   sheet and prefer 5–8 s over 10 s.
 
-Project examples: `I:\Video Generation\Projects\Moon Garden` or `I:\Video Generation\Elemental Creatures\ember salamander`. Keep all parts of one film in one project, not a new project per segment.
+Project examples: `$Films\Moon Garden` or `$Series\ember salamander`. Keep all parts of one film in one project, not a new project per segment.
 
 ## Adapters (LoRA) per take
 
@@ -287,7 +287,7 @@ or `ffmpeg` step dies with "Permission denied". Use the skill wrapper — same a
 controller code, only the temp-directory creation differs:
 
 ```powershell
-$py 'I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/finalize_sandbox.py' `
+$py '$Tools/skills/comfy-film-dsh/scripts/finalize_sandbox.py' `
     --project PROJECT --name autumn-leaf-fawn --deliver-dir OUTPUTS
 ```
 
@@ -296,7 +296,7 @@ and the copy of the upscaled file into the deliver directory. Upscaling is on by
 `--no-upscale` to produce only the source-resolution export, `--scale N` for another factor.
 
 ```powershell
-$py 'I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/finalize_delivery.py' `
+$py '$Tools/skills/comfy-film-dsh/scripts/finalize_delivery.py' `
     --project PROJECT --name autumn-leaf-fawn --deliver-dir OUTPUTS
 ```
 
@@ -306,7 +306,7 @@ version and say what changed.
 ## Delivery upscale (SeedVR2 3B FP16, outside ComfyUI)
 
 ```powershell
-$py 'I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/upscale_seedvr2.py' `
+$py '$Tools/skills/comfy-film-dsh/scripts/upscale_seedvr2.py' `
     --input PROJECT/<name>-final-vN.mp4 --output PROJECT/<name>-final-vN-2x.mp4 [--scale 2] [--crf 16]
 ```
 
@@ -318,7 +318,7 @@ $py 'I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/upscale_seedvr2.py'
 ## Checking a candidate before review
 
 ```powershell
-$py 'I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/motion_profile.py' CLIP.mp4
+$py '$Tools/skills/comfy-film-dsh/scripts/motion_profile.py' CLIP.mp4
 ```
 
 Prints 0.5 s motion windows, `dead_runs` (< 0.5), `still_runs` (< 1.2) and a verdict. Every FL2VA

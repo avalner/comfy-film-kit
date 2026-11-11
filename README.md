@@ -73,17 +73,18 @@ Point it elsewhere with `-ToolsRoot`, `-ComfyRoot`, `-DshSkills`, `-CodexSkills`
 ### Porting to another machine
 
 Nothing in the controller is path-bound: `film.py` reads `machine.json` next to itself and takes
-project paths as arguments. The skill *text* is written against the canonical
-`I:\Video Generation\Tools`, so a machine that keeps the checkout elsewhere resolves it once:
+project paths as arguments. The skill *text* uses variables, resolved once from `paths.json`:
 
 ```powershell
 $P     = Get-Content '<kit>\paths.json' -Raw | ConvertFrom-Json
-$Tools = $P.tools; $py = $P.python; $film = "$Tools/comfy-film/scripts/film.py"
+$Tools = $P.tools; $Comfy = $P.comfy; $py = $P.python
+$Films = $P.films; $Series = $P.series; $Paintings = $P.paintings; $MediaRoot = $P.media
 ```
 
-`install.ps1` writes `paths.json` (`tools`, `comfy`, `python`, `ffmpeg`, `ffprobe`); the agent
-substitutes those values for the literal paths in the skills. Nothing else depends on the drive
-letter. Keeping the checkout at the canonical path is still the zero-friction option.
+`install.ps1` writes `paths.json` with `tools`, `comfy`, `python`, `ffmpeg`, `ffprobe`, `films`,
+`series`, `paintings` and `media`. Project locations default to the kit's siblings and move with
+`-Films`, `-Series`, `-Paintings`, `-Media`. Every skill starts with the same resolution step, and
+`check-paths.ps1` fails the build if an absolute path creeps back into the skill text.
 
 ## Configuration
 

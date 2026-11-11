@@ -66,7 +66,7 @@ When a run's response or state write fails after possible submission, use `statu
 Final processing remains through the existing wrapper:
 
 ```powershell
-python 'I:/Video Generation/Tools/skills/comfy-film-dsh/scripts/finalize_delivery.py' --project PROJECT --name NAME --deliver-dir OUTPUTS --no-upscale
+python '$Tools/skills/comfy-film-dsh/scripts/finalize_delivery.py' --project PROJECT --name NAME --deliver-dir OUTPUTS --no-upscale
 ```
 
 Keep project-specific reproduction details and source paths in that project's `brief.md`. The example's timing was 5+10+5 seconds at 24 fps, 768x1344, Turbo 8; the accepted living clip generated 243 frames and used a 3-frame tail trim for exactly 10 seconds. Music was subsequently mixed as a new final version; scene ambience was reduced to 25% amplitude, with 0.5s music fade-in and 1.5s fade-out. Reconsider these values for each new scene and supplied track.

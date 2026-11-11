@@ -4,11 +4,11 @@ Use only when publication is requested or a standing instruction explicitly auth
 
 ## Persistent installation
 
-Use the Python executable from assets/machine.json and scripts/youtube.py. Machine-local paths, verified channel and known playlists are in assets/youtube.json. This contains paths only, never credential contents. Libraries live permanently in I:/Video Generation/Tools/youtube-direct/dependencies, independent of any chat workspace. OAuth client and token remain under G:/Documents/Google, outside deliverables and skill packages. Never print, copy into outputs, commit, or bundle these secrets.
+Use the Python executable from assets/machine.json and scripts/youtube.py. Machine-local paths, verified channel and known playlists are in assets/youtube.json. This contains paths only, never credential contents. Libraries live permanently in $Tools/youtube-direct/dependencies, independent of any chat workspace. OAuth client and token live outside the kit, at the paths named by `client_secrets` and `token` in assets/youtube.json — never inside deliverables or skill packages. Never print, copy into outputs, commit, or bundle these secrets.
 
-The configured channel is Little Wonder Worlds (@avalner), ID UCekIHSeDQUq4ry42d6EVeKg. Verify using `account` before publishing. Existing refresh credentials normally avoid interactive login; if expired/revoked or scopes missing, run `auth` (with `--manage-playlists` when needed). The user completes Google login/consent. A wrong channel stops the operation. For access_denied in Testing, add the login email under Google Auth Platform → Audience → Test users; test grants may expire after seven days. Do not claim OAuth approval guarantees public uploads; check actual returned visibility and processing.
+The configured channel comes from `channel_id`, `channel_title` and `channel_handle` in assets/youtube.json. Verify using `account` before publishing. Existing refresh credentials normally avoid interactive login; if expired/revoked or scopes missing, run `auth` (with `--manage-playlists` when needed). The user completes Google login/consent. A wrong channel stops the operation. For access_denied in Testing, add the login email under Google Auth Platform → Audience → Test users; test grants may expire after seven days. Do not claim OAuth approval guarantees public uploads; check actual returned visibility and processing.
 
-**Sandbox caveat.** The first API call refreshes the token and rewrites `token.json` under `G:/Documents/Google`. Under DSH's workspace-write policy that write is outside the workspace, so `account`/`upload` die with a bare `PermissionError` before any request is made — it looks like broken auth but it is the token write. Run those commands with full-disk access (one approval), or refresh the token outside the sandbox first. The upload journal lives inside the project and needs no extra access.
+**Sandbox caveat.** The first API call refreshes the token and rewrites the `token` file named in assets/youtube.json. Under DSH's workspace-write policy that write is outside the workspace, so `account`/`upload` die with a bare `PermissionError` before any request is made — it looks like broken auth but it is the token write. Run those commands with full-disk access (one approval), or refresh the token outside the sandbox first. The upload journal lives inside the project and needs no extra access.
 
 In DSH there is no drafting sub-agent step: write the metadata package in the parent, save it to `youtube.json`, and show the complete title and description for explicit approval. The parent retains live metadata, user approvals and all publication operations.
 
@@ -30,7 +30,7 @@ python scripts/youtube.py playlists
 python scripts/youtube.py auth --manage-playlists
 python scripts/youtube.py upload --project PROJECT --file APPROVED_FINAL.mp4 --metadata PROJECT/youtube.json --approved
 python scripts/youtube.py status --project PROJECT --wait 180
-python scripts/youtube.py add-playlist --video VIDEO_ID --playlist 'Elemental Creatures'
+python scripts/youtube.py add-playlist --video VIDEO_ID --playlist 'My Playlist'
 ```
 
 `upload` saves PROJECT/.pipeline/youtube-upload.json before submission; it records the source hash, video ID and response. Existing journals block re-upload across chats, even if the file was edited: inspect/status first. Preserve the journal and prior exports. Do not delete/reset a journal to retry an uncertain upload; recover the recorded resumable session or check the channel before any new submission. Treat any resumable_uri in the journal as sensitive; do not display or copy it to a public deliverable. Do not automatically retry a non-idempotent upload.
