@@ -176,7 +176,9 @@ Short takes run the same graph the H3 Workspace app does: a sigma shift (10/3), 
 backend and block-sparse (VSA) attention by default. `--quality fast` switches to the Turbo-SLA
 4-step route with dense attention — measured 30 s → 15 s for a 5 s take at 384×672, at the cost of a
 softer texture; `--attention dense` keeps the steps but drops VSA. Every take also saves a 17-token
-latent tail, which `film add --chain latent` can continue from instead of decoded frames.
+latent tail, which `film add --chain latent` can continue from instead of decoded frames — those takes
+carry the workspace's chunked feed-forward and attention savers (`--no-savers` on a 24 GB card), and
+`--draft` (or `film preview --draft`) renders the 4-step DMAD/LCM draft.
 
 ## First run on a machine that has nothing
 

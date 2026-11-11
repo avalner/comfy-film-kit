@@ -58,6 +58,14 @@ film add --project PROJECT --chain latent --prompt-file PART-2.txt --seconds 6
   context (the sampler starts from the previous latent instead of noise), not a pixel-exact join.
 - For a seam-free join keep `--guide prev --guide-frames 22 --last board.png`. Use `--chain latent`
   when the scene should *evolve* into a new beat rather than continue the same one.
+- Memory savers (chunked feed-forward + chunked attention) are on for every chained take, as in the
+  workspace: they trade speed for peak VRAM. On a 24 GB card pass `--no-savers`.
+- `--draft` on `add`/`run` renders the take as the workspace's 4-step draft: DMAD LoRA, `lcm` sampler,
+  shifts 12/2. `film preview --draft` makes a whole previz pass draft. A draft is for judging staging
+  and the cut, never a deliverable: measured 20 s against 30 s for the turbo take at 384x672/5 s,
+  while the Turbo-SLA `--quality fast` route stays the faster *deliverable* draft at 15 s.
+- `--draft` and `--chain latent` combine: a chained draft take measured 35 s for 6.6 s generated
+  (memory savers included), against 15 s for a plain fast take of 5.2 s.
 
 ## References (Ref2VA)
 

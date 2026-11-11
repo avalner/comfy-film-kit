@@ -418,6 +418,8 @@ def preview_project(args, root, p):
     write(data / "workflow-api.json", read(template))
     config = dict(p["config"])
     config.update(width=width, height=height, segment_seconds=seconds)
+    if getattr(args, "draft", False):
+        config["draft"] = True
     q = {"version": 1, "id": uuid.uuid4().hex,
          "title": f"{p['title']} — previz {width}x{height}",
          "config": config, "bindings": dict(p["bindings"]),
@@ -556,6 +558,8 @@ def chain_graph(root, p, s, cfg):
 
     # the tail this take hands to the next one
     add_tail(graph, f"comfy_film/{p['id']}/tail-{s['number']:04d}")
+    if s.get("savers", True):
+        apply_memory_savers(graph)
 
     s["chain"].update(frames={"kept": total - ov, "overlap": ov, "total": total})
     return graph, ["chain-save"]
@@ -631,6 +635,10 @@ def add_segment(args, root, p):
         if not 4 <= seconds <= 15:
             raise FilmError("H3 segment duration must be 4–15 seconds; assemble as many segments as needed")
         s["seconds"] = seconds
+        if getattr(args, "draft", False):
+            s["draft"] = True
+        if getattr(args, "no_savers", False):
+            s["savers"] = False
         s["prompt"] = copy_input(root, args.prompt_file, folder / "prompt.txt")
         if getattr(args, "chain", "frames") == "latent":
             if args.first or args.last or args.loop or getattr(args, "guide", None):
@@ -785,6 +793,61 @@ def apply_route(graph, cfg):
                               if isinstance(x, list) and x[0] in graph and graph[x[0]]["class_type"] == "PrimitiveInt"]
                 for inputs in step_nodes:
                     inputs["value"] = 4
+    return graph
+
+
+def apply_memory_savers(graph):
+    """The workspace's long-video memory savers: chunked feed-forward and chunked attention.
+
+    They trade a little speed for a much smaller peak, which is what lets a 12–16 GB card render a
+    long take at all. Only long (latent-chain) takes get them: a short take does not need the trade.
+    """
+    guider, scheduler = of_class(graph, "BasicGuider"), of_class(graph, "BasicScheduler")
+    if len(guider) != 1 or len(scheduler) != 1 or of_class(graph, "MiniMaxChunkFeedForward"):
+        return graph
+    model = graph[guider[0]]["inputs"].get("model")
+    if not model:
+        return graph
+    graph["mem-chunk"] = {"class_type": "MiniMaxChunkFeedForward", "inputs": {
+        "model": model, "chunks": 2, "seq_threshold": 4096}}
+    graph["mem-attn"] = {"class_type": "MiniMaxLowVRAMAttention", "inputs": {
+        "model": ["mem-chunk", 0], "head_chunks": 4}}
+    graph[guider[0]]["inputs"]["model"] = ["mem-attn", 0]
+    graph[scheduler[0]]["inputs"]["model"] = ["mem-attn", 0]
+    return graph
+
+
+DRAFT_LORA = "minimax_h3_DMAD_4step_full_lora_avg_rank_39_bf16.safetensors"
+
+
+def apply_draft(graph, cfg):
+    """The workspace's 4-step draft: DMAD LoRA, lcm sampler, shifts 12/2.
+
+    A whole previz pass at a quarter of the steps. Softer and less stable than turbo — never a
+    deliverable, always a way to see whether the beat and the cut work.
+    """
+    names = server_loras(cfg)
+    choice = next((n for n in names if n.split("\\")[-1] == DRAFT_LORA), None)
+    if not choice:
+        choice = next((n for n in names if "dmad" in n.lower()), None)
+    if not choice:
+        raise FilmError("The draft route needs the DMAD 4-step LoRA (" + DRAFT_LORA
+                        + "); install it or drop --draft")
+    loras = of_class(graph, "LoraLoaderModelOnly")
+    if len(loras) == 1:
+        graph[loras[0]]["inputs"]["lora_name"] = choice
+        graph[loras[0]]["inputs"]["strength_model"] = 1.0
+    for node in of_class(graph, "MiniMaxH3SigmaShift"):
+        graph[node]["inputs"].update(shift_video=12.0, shift_audio=2.0)
+    for node in of_class(graph, "KSamplerSelect"):
+        graph[node]["inputs"]["sampler_name"] = "lcm"
+    for scheduler in of_class(graph, "BasicScheduler"):
+        link = graph[scheduler]["inputs"].get("steps")
+        if isinstance(link, list) and link[0] in graph and graph[link[0]]["class_type"] == "ComfySwitchNode":
+            step_nodes = [graph[x[0]]["inputs"] for x in graph[link[0]]["inputs"].values()
+                          if isinstance(x, list) and x[0] in graph and graph[x[0]]["class_type"] == "PrimitiveInt"]
+            for inputs in step_nodes:
+                inputs["value"] = 4
     return graph
 
 
@@ -959,6 +1022,12 @@ def submit(args, root, p):
     if (q.get("queue_running") or q.get("queue_pending")) and not args.enqueue:
         raise FilmError("ComfyUI is busy; no job submitted. Use --enqueue only if adding to the queue is intended")
     folder = root / ".pipeline" / "segments" / f"{s['number']:04d}"
+    if getattr(args, "draft", False):
+        s["draft"] = True
+    if getattr(args, "no_draft", False):
+        s.pop("draft", None)
+    if getattr(args, "no_savers", False):
+        s["savers"] = False
     if getattr(args, "first", None):
         s.setdefault("input_revisions", []).append({k: s[k] for k in ("first", "guide", "seconds", "trim_head") if k in s})
         s["first"] = copy_input(root, args.first, folder / ("first-revised-" + uuid.uuid4().hex[:8] + Path(args.first).suffix.lower()))
@@ -1014,7 +1083,10 @@ def submit(args, root, p):
     elif "adapters" in s:
         s.pop("adapters")
     # Ref2VA brings its own model, LoRA, shifts and step count: leave that chain alone.
-    if not s.get("ref2va"):
+    draft = bool(s.get("draft", cfg.get("draft", False)))
+    if draft:
+        graph = apply_draft(graph, cfg)
+    elif not s.get("ref2va"):
         graph = apply_route(graph, cfg)
     graph = apply_preview(graph, cfg)
     tail = add_tail(graph, f"comfy_film/{p['id']}/tail-{s['number']:04d}")
@@ -1405,6 +1477,10 @@ def build_parser():
                            help="'max' keeps reference detail at any cost, 'match' fits them to the canvas")
             a.add_argument("--prompt-file", required=True)
             a.add_argument("--seconds", type=float)
+            a.add_argument("--draft", action="store_true",
+                           help="render this take as a 4-step DMAD draft (never a deliverable)")
+            a.add_argument("--no-savers", action="store_true",
+                           help="latent chain only: skip the memory savers (24 GB+ cards pay speed for nothing)")
         if name == "import":
             a.add_argument("--file", required=True)
             a.add_argument("--replace-rejected", action="store_true", help="replace only the latest rejected candidate, preserving history")
@@ -1420,6 +1496,8 @@ def build_parser():
                            help="strength applied to every --lora (default 1.0)")
             a.add_argument("--no-lora", action="store_true",
                            help="run without the adapters recorded on this segment")
+            a.add_argument("--draft", action="store_true", help="render as a 4-step DMAD draft")
+            a.add_argument("--no-draft", action="store_true", help="cancel a draft marking on this segment")
         if name == "wait":
             a.add_argument("--timeout", type=float, default=7200)
             a.add_argument("--poll", type=float, default=5)
@@ -1440,6 +1518,8 @@ def build_parser():
             a.add_argument("--width", type=int, help="preview width, multiple of 32 (default 384)")
             a.add_argument("--height", type=int, help="preview height, multiple of 32 (default 672)")
             a.add_argument("--seconds", type=float, help="default preview take length (default 5)")
+            a.add_argument("--draft", action="store_true",
+                           help="every take of this previz is a 4-step DMAD draft")
         if name == "stitch":
             a.add_argument("--output")
     return parser

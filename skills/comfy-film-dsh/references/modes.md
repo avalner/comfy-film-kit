@@ -70,6 +70,11 @@ and measured 2026-11-11 at 384×672: the overlap is regenerated rather than pinn
 it when the scene should evolve into a new beat; keep `--guide prev` when the join itself must be
 invisible. Details and the arithmetic: `commands.md`.
 
+Chained takes also carry the workspace's memory savers (chunked feed-forward and chunked attention,
+`--no-savers` to drop them on a 24 GB card) and can run as a 4-step draft (`--draft` on the take, or
+`film preview --draft` for the whole previz pass). A draft is the cheapest way to settle staging and
+the cut; it is never the deliverable.
+
 ## refs — references (Ref2VA)
 
 ```powershell
