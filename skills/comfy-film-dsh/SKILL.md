@@ -12,7 +12,7 @@ This is the DSH counterpart of the Codex `comfy-film` skill. The controller is s
 - `scripts/film.py`, `finalize.py`, `match_lighting.py`, `youtube.py`, `progress.py` (+ `progress.html/js`, `progress-worker.cjs`)
 - `assets/machine.json` (Python path, ComfyUI startup), `assets/youtube.json` (channel, playlists)
 
-The Codex skill keeps its `scripts/` and `assets/` as Windows junctions to that folder, so both agents run byte-identical code and there is one place to edit. Always call the scripts by the absolute path above with the Python from `assets/machine.json`. Never duplicate or fork the controller; this skill only changes the surrounding workflow.
+The Codex skill keeps its `scripts/` and `assets/` as Windows junctions to that folder, so both agents run byte-identical code and there is one place to edit. Always reach the scripts through the resolved `$Tools` and `$py` below — never through a path typed by hand. Never duplicate or fork the controller; this skill only changes the surrounding workflow.
 
 ## Paths — resolve once, before the first command
 
