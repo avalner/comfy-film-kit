@@ -20,6 +20,8 @@ tool names differ (a browser panel versus an HTTP preview server, a menu tool ve
 
 | Path | What it is |
 |---|---|
+| `install.ps1` | Links the skills into the agent folders, writes `paths.json`, and creates `machine.json` when it can see a ComfyUI. |
+| `check-paths.ps1` | Fails when an absolute path creeps back into the skill text; CI runs it on every push. |
 | `comfy-film/scripts/film.py` | The controller. Owns the project record, the ComfyUI job, the guide/continuation graph, trims, joins, stitching and the CLI. |
 | `comfy-film/scripts/lipsync.py` | The audio-driven mode: MiniMax H3 Ref2V + native audio lock, two passes, one take. |
 | `setup/install-comfy.ps1` | Installs ComfyUI, node packs, models per mode and FFmpeg on a bare machine; `-Check` reports without downloading. |
@@ -44,12 +46,14 @@ tool names differ (a browser panel versus an HTTP preview server, a menu tool ve
 ## Requirements
 
 - **Windows 10/11.** Everything here is written for PowerShell and NTFS junctions.
-- **ComfyUI portable** with the MiniMax H3 stack installed: `MiniMaxH3ImageToVideo`, the H3 model files, the Qwen text encoder, video/audio VAE and the turbo LoRA. The kit does not ship models and does not install ComfyUI.
+- **ComfyUI portable** with the MiniMax H3 stack installed: `MiniMaxH3ImageToVideo`, the H3 model files, the Qwen text encoder, video/audio VAE and the turbo LoRA. The kit ships no weights, but `setup/install-comfy.ps1` installs ComfyUI, the node packs and the model set for the modes you choose.
 - **FFmpeg and FFprobe.** Any recent build; the machine profile points at them.
 - **NVIDIA GPU.** Native 768×1344 takes are heavy: a 10 s take is roughly 10 minutes on a 4090.
 - **Python 3.12/3.13.** Use the `python_embeded` that ships with ComfyUI portable — there is no separate environment to maintain.
 
-Optional ComfyUI node packs the post-production recipes rely on: `ComfyUI-VideoHelperSuite`, `ComfyUI-Frame-Interpolation` (RIFE) and `ComfyUI-ProPainter`. SeedVR2 needs `ComfyUI-SeedVR2_VideoUpscaler` plus its 3B FP16 weights.
+`VideoHelperSuite` and `KJNodes` come with the installer for the modes that need them. The
+post-production recipes additionally rely on `ComfyUI-Frame-Interpolation` (RIFE) and
+`ComfyUI-ProPainter`; SeedVR2 needs `ComfyUI-SeedVR2_VideoUpscaler` plus its 3B FP16 weights.
 
 ## Install
 
@@ -169,8 +173,9 @@ $film  = "$Tools\comfy-film\scripts\film.py"
 `$Tools` is the only path you set by hand. The interpreter comes from `machine.json`, which is what
 `install.ps1` or `setup/install-comfy.ps1` writes — there is no second place to keep it in sync.
 
-`film init`, `preview`, `add`, `run`, `wait`, `status`, `review`, `accept`, `reject`,
-`trim`, `join`, `stitch`, `extract`, `loras`, `recover`, `doctor`, `finalize`.
+`film init`, `add`, `import`, `run`, `wait`, `status`, `accept`, `reject`, `recover`,
+`extract`, `inspect`, `doctor`, `start`, `trim`, `join`, `stitch`, `unlock`, `loras`, `preview`.
+`finalize.py` is a separate script; `preview` creates the low-resolution twin project.
 Every command prints a compact JSON object and fails with a non-zero exit code.
 
 Full syntax: `skills/comfy-film-dsh/references/commands.md`.
@@ -187,6 +192,23 @@ Full syntax: `skills/comfy-film-dsh/references/commands.md`.
 The agent asks this first, because it decides the model download, the prompt shape and what the
 reviewer looks at. Details: `skills/comfy-film-dsh/references/modes.md`.
 
+**References** attach to any of the other modes — they say *who* is in frame, keyframes say *where*:
+
+```powershell
+film add --project P --ref2va hero.png --ref2va room.png `
+    --ref2va-model minimax_h3_ref2va_pruned_int8_convrot.safetensors `
+    --ref2va-lora minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors `
+    --ref2va-steps 6 --first board.png --prompt-file part-1.txt --seconds 8
+```
+
+**Lipsync** is its own entry point, same profile, one take (the video follows the audio):
+
+```powershell
+$py "$Tools/comfy-film/scripts/lipsync.py" --audio voice.mp3 --ref face.png `
+    --prompt-file lipsync.txt --project "$Films/<name>"
+# -> clips/lipsync-000N.mp4 plus a journal record with seed, models and source audio
+```
+
 Short takes run the same graph the H3 Workspace app does: a sigma shift (10/3), the kitchen attention
 backend and block-sparse (VSA) attention by default. `--quality fast` switches to the Turbo-SLA
 4-step route with dense attention — measured 30 s → 15 s for a 5 s take at 384×672, at the cost of a
@@ -202,10 +224,9 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\setup\install-comfy.ps1 -Modes v
 ```
 
 `-Check` reports the GPU, driver, RAM, free disk, which models are present and which are missing —
-and downloads nothing. Drop `-Check` to install: ComfyUI 0.43.0 portable, five node packs pinned to
-commits, the model set for the chosen modes, FFmpeg if the machine has none, then
-`comfy-film/assets/machine.json`. Downloads resume; existing ComfyUI installs and model files are
-detected and left alone.
+and downloads nothing. Drop `-Check` to install: ComfyUI 0.43.0 portable, the node packs the chosen modes need, the model
+set for those modes, FFmpeg if the machine has none, then `comfy-film/assets/machine.json`.
+Downloads resume; existing ComfyUI installs and model files are detected and left alone.
 
 | Mode group | Download |
 |---|---|
@@ -215,6 +236,27 @@ detected and left alone.
 
 Needs an NVIDIA card (RTX 20-series+, 8 GB VRAM), driver 580+, 32 GB RAM and 40–100 GB of disk.
 Full detail, flags and troubleshooting: `skills/comfy-film-dsh/references/install.md`.
+
+## Finishing and post-production
+
+- **Assembly.** `film trim --head 0.25 --tail 0.5` (absolute values — the end you omit resets to 0),
+  then `film join --after 1 --mode cut|crossfade|optical`, then `film stitch`. `crossfade` hides a
+  pause baked into a join, `optical` bridges motion when two clips do not quite meet,
+  `match_lighting.py` measures and corrects a luma step between neighbours.
+- **Delivery.** `finalize_delivery.py` → `<name>-final-vN.mp4`: H.264 `yuv420p`, AAC, `+faststart`,
+  decode verified, no overwrite, plus a ×2 SeedVR2 copy `-2x.mp4` unless `--no-upscale`.
+- **Surgery.** RIFE (`rife.py`) for slow motion or a 1.3× speed-up at 48 fps, ProPainter for an
+  object the model refused to drop, VideoHelperSuite for video and mask IO. Recipes and caveats:
+  `skills/comfy-film-dsh/references/post-tools.md`.
+
+## Publication
+
+`youtube.py account | upload | playlists | add-playlist | status --wait | auth` — direct OAuth, no
+browser upload and no intermediary service. The metadata is shown as text (full title, full
+description with its line breaks, tags, visibility, audience, playlist) and approved before anything
+is sent; film approval alone never authorises posting. `youtube.json` in the project plus the upload
+journal prevent duplicates, and credentials stay outside the kit. Details:
+`skills/comfy-film-dsh/references/youtube.md`.
 
 ## Language
 
@@ -271,7 +313,7 @@ because that agent's habits differ (browser panel, sub-agent delegation).
 
 - Windows only, by design. The controller is portable Python, but the skills assume PowerShell, junctions and drive letters.
 - The Codex skill text (`skills/comfy-film/SKILL.md`) is authored here and installed by `install.ps1 -Force`; the Codex folder itself carries only junctions to `comfy-film/scripts` and `comfy-film/assets`.
-- The Codex skill still points at `references/*.md` that live in `skills/comfy-film-dsh/references/`. That inconsistency predates this repository and is a known gap, not a feature.
+- Two film texts exist (`comfy-film-dsh` for DSH, `comfy-film` for Codex). They say the same thing today; the Codex one is a copy and will drift until it is reduced to a pointer.
 
 ## License
 
