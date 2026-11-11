@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import math
 import os
 from pathlib import Path
 import secrets
@@ -362,7 +363,12 @@ def init_project(args):
     for k in ["server", "ffmpeg", "ffprobe"]:
         if getattr(args, k, None):
             config[k] = getattr(args, k)
-    config.update(width=args.width, height=args.height, fps=args.fps, quality=args.quality,
+    width, height = args.width, args.height
+    if getattr(args, "aspect", None):
+        width, height = canvas_from(args.aspect, args.megapixels or QUALITY_STOPS["0.6"])
+        print(json.dumps({"canvas": f"{width}x{height}", "aspect": args.aspect,
+                          "megapixels": round(width * height / 1e6, 3)}))
+    config.update(width=width, height=height, fps=args.fps, quality=args.quality,
                   audio=args.audio, music=args.music, segment_seconds=args.seconds,
                   attention=args.attention, preview=args.preview == "on")
     if not 4 <= args.seconds <= 15:
@@ -375,7 +381,7 @@ def init_project(args):
         if switch not in graph:
             raise FilmError("Quality selector ambiguous; provide bindings.turbo or --quality workflow for a custom graph")
         graph[switch]["inputs"]["value"] = args.quality in ("turbo", "fast")
-    if args.width % 32 or args.height % 32 or args.fps != 24:
+    if width % 32 or height % 32 or args.fps != 24:
         raise FilmError("This H3 template requires dimensions divisible by 32 and 24 fps")
     data = root / ".pipeline"
     data.mkdir(exist_ok=True)
@@ -387,6 +393,22 @@ def init_project(args):
 
 
 PREVIEW_CANVAS = (384, 672)
+
+# The same ladder the H3 Workspace app offers: an aspect ratio plus a target area. Sizes are
+# computed from the area and snapped to H3's 32-pixel grid, so any ratio works, not just three.
+ASPECTS = {"16:9": (16, 9), "9:16": (9, 16), "1:1": (1, 1), "4:3": (4, 3), "3:4": (3, 4), "21:9": (21, 9)}
+
+# Named stops, 16:9 equivalents: 736x416, 1056x608, 1376x768, 1824x1024.
+QUALITY_STOPS = {"0.3": 0.306, "0.6": 0.642, "HD+": 1.057, "1.8": 1.867}
+
+
+def canvas_from(aspect, megapixels):
+    """Width and height for an aspect ratio and a target area, both multiples of 32."""
+    a, b = ASPECTS[aspect]
+    px = float(megapixels) * 1_000_000
+    width = max(64, round(math.sqrt(px * a / b) / 32) * 32)
+    height = max(64, round(math.sqrt(px * b / a) / 32) * 32)
+    return width, height
 
 
 def preview_project(args, root, p):
@@ -1441,6 +1463,10 @@ def build_parser():
             a.add_argument("--ffmpeg")
             a.add_argument("--ffprobe")
             a.add_argument("--width", type=int, default=768)
+            a.add_argument("--aspect", choices=list(ASPECTS), default=None,
+                           help="canvas from an aspect ratio instead of --width/--height")
+            a.add_argument("--megapixels", type=float, default=None,
+                           help="target area for --aspect: 0.3 quick test, 0.64 base, 1.06 HD+, 1.87 large")
             a.add_argument("--height", type=int, default=1344)
             a.add_argument("--fps", type=int, default=24)
             a.add_argument("--quality", choices=["turbo", "standard", "fast", "workflow"], default="turbo",

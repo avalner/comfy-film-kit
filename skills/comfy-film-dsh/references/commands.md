@@ -183,6 +183,11 @@ and every master take is generated (and reviewed) again.
 
 ## Configuration
 
+`init --aspect 9:16 --megapixels 0.64` builds the canvas from an aspect ratio and a target area,
+snapping both sides to 32 px — the same arithmetic as the app's format settings. The named stops are
+0.3, 0.64, HD+ (1.06) and 1.87 megapixels; any other number works too. Without `--aspect`, pass
+`--width/--height` directly; the two paths must not be mixed.
+
 `init --server http://HOST:8188 --ffmpeg PATH --ffprobe PATH` overrides machine defaults. Supply a custom **API-format H3 graph** with --workflow PATH; graphical nodes/links exports are rejected. --bindings JSON identifies generator/save/first/last node IDs when automatic discovery is ambiguous. This controller targets MiniMaxH3ImageToVideo, not every ComfyUI model family.
 
 The current template needs the installed H3 model files, Qwen encoder, video/audio VAE and turbo LoRA. `doctor` checks node classes, FFmpeg and optional libraries without loading models. Existing projects keep their own config in film.json; changing machine.json affects new projects only.
