@@ -75,7 +75,13 @@ where the checkout lives. The skills do — they are written against the canonic
 3. Writes `paths.json` — the file every skill resolves its variables from.
 4. Reports anything it skipped. Nothing is overwritten without `-Force`.
 
-Point it elsewhere with `-ToolsRoot`, `-ComfyRoot`, `-DshSkills`, `-CodexSkills`, `-SkipCodex`.
+No weights, no binaries and no login data are committed: the installer fetches ComfyUI and the model
+set, `realesrgan/README.md` and `seedvr2/download_model.py` fetch their own files, and
+`pip install --target comfy-film\deps opencv-python-headless` adds the optional OpenCV that optical
+joins need. `.gitignore` lists the rest with the reason next to each rule.
+
+Point it elsewhere with `-ToolsRoot`, `-ComfyRoot`, `-DshSkills`, `-CodexSkills`, `-ClaudeSkills`,
+`-Films`, `-Series`, `-Paintings`, `-Media`; skip parts with `-SkipCodex`, `-SkipClaude`.
 
 ### Porting to another machine
 
@@ -295,18 +301,6 @@ nobody moves.
 
 One maintained film text is the point: `comfy-film-dsh` is canonical, and the Codex copy exists only
 because that agent's habits differ (browser panel, sub-agent delegation).
-
-## What is deliberately not committed
-
-| Excluded | Why |
-|---|---|
-| `deps/`, `youtube-direct/dependencies/` | Vendored Python packages, tens of thousands of files. Install with `pip install --target`. |
-| `__pycache__/`, `logs/`, `.pipeline/` | Run artefacts. |
-| `agent-model/` | 14.5 GB of llama.cpp and weights, unrelated to the film pipeline. |
-| `realesrgan/*.exe`, `realesrgan/models/` | ~100 MB of binaries with their own release page. |
-| SeedVR2 weights | Fetched by `seedvr2/download_model.py`. |
-| `machine.json`, `youtube.json`, OAuth tokens | Machine- and account-specific. Templates are provided. |
-| Project folders (`frames/`, `clips/`, finals) | Yours, not the kit's. |
 
 ## Status
 
